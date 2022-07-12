@@ -30,14 +30,21 @@ class Logger(logging.Logger):
         self.info(msg)
 
     @staticmethod
-    def get_exc_info(exc: Exception) -> str:
+    def flatten_string(string: str) -> str:
+        """
+        Translates multiline text to a single line.
+        """
+        return string.replace("\n", " \\n ")
+
+    @classmethod
+    def get_exc_info(cls, exc: Exception) -> str:
         """
         Simple transformation of error into single line text.
         """
-        return str(exc).replace("\n", " \\n ")
+        return cls.flatten_string(str(exc))
 
-    @staticmethod
-    def get_full_exc_info(exc: Exception) -> str:
+    @classmethod
+    def get_full_exc_info(cls, exc: Exception) -> str:
         """
         Parses the error traceback and formats it for multiline output.
         """
@@ -45,10 +52,12 @@ class Logger(logging.Logger):
         traceback_crumb = get_traceback(exc.__traceback__)
         max_len = len(max(traceback_crumb, key=len))
         formatted_crumbs = (line.ljust(max_len, " ") for line in traceback_crumb)
-        return "\n" + " >\n".join(formatted_crumbs) + " !"
+        crumbs = " >\n".join(formatted_crumbs) + " !"
+        exc_str = cls.get_exc_info(exc)
+        return f"\n{crumbs}\n{exc_str}"
 
 
-DEFAULT_FORMAT = "{levelname:<8} > {asctime:<23} > {name:<16} > {msg}"
+DEFAULT_FORMAT = "{levelname:<8} > {asctime:<23} >>| {msg}"
 
 existing_loggers: dict[str, Logger] = {}
 
@@ -62,9 +71,6 @@ def get_logger(
     """
     Custom logger initialization.
     """
-
-    if len(name) > 16:
-        raise Exception(f'Name "{name}" is very long (maximum 16 symbols)')
 
     if name not in existing_loggers:
         logger_ = Logger(name, level)
