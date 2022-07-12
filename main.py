@@ -6,13 +6,14 @@ from telegram import Update
 from telegram.ext import (
     Updater,
     CommandHandler,
-    Filters,
     Dispatcher,
-    BaseFilter,
     MessageHandler,
+    Filters,
+    BaseFilter,
 )
 
 from envs import envs
+from logger import logger
 from handlers import (
     received_message,
     command_start,
@@ -21,6 +22,9 @@ from handlers import (
     command_translation,
     command_translorem,
 )
+
+
+TOKEN = envs["TOKEN"]
 
 
 class NoChangeFilter(BaseFilter):
@@ -70,12 +74,13 @@ def main():
     The main function, creates a bot, sets its handlers and starts it.
     """
 
-    updater = Updater(envs["TOKEN"], use_context=True)
+    updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     add_all_handlers(dispatcher)
-
     updater.start_polling()
-    print("bot has started")
+
+    print("Bot has started")
+    logger("Bot has started")
     updater.idle()
 
 

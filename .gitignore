@@ -2,5 +2,7 @@ __pycache__/
 *.pyc
 
 .idea/
+
 .envs
-russian_text_data/*.txt
+russian_text_data/*.txt*
+logs/*.txt
