@@ -70,7 +70,7 @@ def command_start(update: Update, context: CallbackContext):
     """
     update.effective_chat.send_message(
         messages["start"],
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 
@@ -88,13 +88,13 @@ def command_help(update: Update, context: CallbackContext):
     if not params:
         message = messages["help"]["default"]
     elif params[0] in ["/help", "/lorem", "/translation", "/translorem"]:
-        message = messages["help"][params[0][1:]]
+        message = messages[params[0][1:]]["help"]
     else:
         message = messages["help"]["unknown"].format(params[0])
 
     update.effective_chat.send_message(
         message,
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=ParseMode.HTML,
         disable_web_page_preview=True
     )
 
@@ -144,7 +144,7 @@ def command_lorem(update: Update, context: CallbackContext):
     input_text = update.message.text
     params = get_params(input_text)
     message = get_response(*params)
-    update.effective_chat.send_message(message)
+    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
 @handler
