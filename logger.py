@@ -1,4 +1,5 @@
 import logging
+from typing import List, Dict, Union
 from types import TracebackType
 
 
@@ -9,7 +10,7 @@ __all__ = [
 ]
 
 
-def get_traceback(trb: TracebackType) -> list[str]:
+def get_traceback(trb: TracebackType) -> List[str]:
     """
     Collects the file and string of the current frame and recursively
     adds the next to it.
@@ -59,14 +60,14 @@ class Logger(logging.Logger):
 
 DEFAULT_FORMAT = "{levelname:<8} > {asctime:<23} >>| {msg}"
 
-existing_loggers: dict[str, Logger] = {}
+existing_loggers: Dict[str, Logger] = {}
 
 
 def get_logger(
         name: str = "logger",
         file: str = "logs/log.txt",
         fmt: str = DEFAULT_FORMAT,
-        level: (int | str) = logging.WARNING,
+        level: Union[int, str] = logging.WARNING,
 ) -> Logger:
     """
     Custom logger initialization.

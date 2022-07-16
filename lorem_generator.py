@@ -15,6 +15,7 @@ The algorithm is as follows:
 import re
 from random import randint
 from pathlib import Path
+from typing import Dict, Union
 
 
 __all__ = [
@@ -64,7 +65,7 @@ class LoremGenerator:
         "el": r"α-ω",
     }
 
-    text_data: dict[str, str]
+    text_data: Dict[str, str]
 
     def __init__(self):
         self.text_data = self.collect_data(self.data_directory)
@@ -75,7 +76,7 @@ class LoremGenerator:
         punct_without_comma = self.punctuation.replace(",", "")
         self._sentences_pattern = re.compile(fr"([{punct_without_comma}]\s)")
 
-    def collect_data(self, data_directory: str) -> dict[str, str]:
+    def collect_data(self, data_directory: str) -> Dict[str, str]:
         """
         Looks for subfolders of languages and reads all the text from
         them.
@@ -102,7 +103,7 @@ class LoremGenerator:
 
         return text_data
 
-    def read_language_data(self, lang_dir: Path) -> str | None:
+    def read_language_data(self, lang_dir: Path) -> Union[str, None]:
         """
         Reads all files in `.txt.` format from a subfolder, joins them
         into a single text and cleans the resulting text (removes line

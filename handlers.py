@@ -1,6 +1,6 @@
 import re
 from functools import wraps
-from typing import Callable
+from typing import Callable, List, Tuple, Union
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -41,7 +41,7 @@ def handler(func: Callable):
 
 repeated_spaces_pattern = re.compile(r"[\s]+")
 
-def get_params(text: str) -> list[str]:
+def get_params(text: str) -> List[str]:
     """
     Parses query arguments: splits by spaces and returns everything after
     the first (the command proper).
@@ -122,7 +122,7 @@ def command_lorem(update: Update, context: CallbackContext):
             word_count: str = "",
             char_count: str = "",
             *args
-    ) -> tuple[str, int, int] | str:
+    ) -> Union[Tuple[str, int, int], str]:
         """
         Parses and validates the first three passed arguments.
         The first can be language or word count (in this case a number),
