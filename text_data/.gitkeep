@@ -1,10 +1,14 @@
-В этой директории должны лежать файлы формата `.txt` с текстами на русском
-языке. Для лучшей работы лучше, если тексты будут содержать только символы
-`[а-яё\s.!?,]`, остальные просто не будут учитываться при работе. Для хорошей
-генерации можно использовать пару книжек разных жанров (почистив от лишних
-символов).
+This directory must contain child directories with text files in `.txt` format.
+The names of the directories will be used as the name of the languages in which
+will be generated. It would be good if the `lang_chars` class parameter would
+contain the characters (in `re` style) that occur in the language.
 
-Пример текста:
+Generating texts with hieroglyphs and diacritics has not been tested, so it's
+better not to use them to be more reliable. For good generation you can use a
+couple of books of different genres (having cleaned them from unnecessary
+characters).
+
+Example text (in Russian with characters `[а-яё\s.!?,]`):
 ```
 в большинстве эпизодов действие происходит в стране смешариков. однако в
 некоторых случаях персонажи могут жить на необитаемом острове, плавать в море,
@@ -12,7 +16,7 @@
 ситуациях, с которыми сталкиваются герои и с которыми может столкнуться ребёнок
 в повседневной жизни. среди персонажей нет отрицательных героев, все живут по
 принципу мира без насилия. нюша всегда пребывает в мечтах, иногда чересчур
-увлекаясь собой и забывая про друзей. бараш ищет вдохновения и однажды находит
+увлекаясь собой и забывая про друзей! бараш ищет вдохновения и однажды находит
 его под собственной кроватью. лосяш невольно сбивает с толку ёжика, заставляя
 того реализовать на практике свою очередную бесплодную научную теорию.
 ```

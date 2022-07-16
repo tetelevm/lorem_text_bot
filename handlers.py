@@ -79,7 +79,7 @@ def command_help(update: Update, context: CallbackContext):
     """
     Displays either general help or help for a known command. Usage:
     /help
-    /help /command
+    /help [/command]
     """
 
     input_text = update.message.text
@@ -87,7 +87,10 @@ def command_help(update: Update, context: CallbackContext):
 
     if not params:
         message = messages["help"]["default"]
-    elif params[0] in ["/help", "/lorem", "/translation", "/translorem"]:
+    elif params[0] == "/lorem":
+        languages = ", ".join(lorem_generator.text_data)
+        message = messages["lorem"]["help"].format(languages=languages)
+    elif params[0] in ["/help", "/translation", "/translorem"]:
         message = messages[params[0][1:]]["help"]
     else:
         message = messages["help"]["unknown"].format(params[0])
@@ -105,45 +108,73 @@ def command_lorem(update: Update, context: CallbackContext):
     Returns a lorem-like pseudo-text that looks like a real language.
     Has 2 optional positional integer arguments - `word count` (5-256)
     and `characters count` (1-3). Usage:
+    /lorem [lang] [words [chars]]
     /lorem
+    /lorem en
     /lorem 128
+    /lorem en 128
     /lorem 128 3
+    /lorem en 128 3
     """
 
-    def get_response(word_count: str = None, chars_len: str = None, *args) -> str:
+    def parse_args(
+            language: str = "",
+            word_count: str = "",
+            char_count: str = "",
+            *args
+    ) -> tuple[str, int, int] | str:
         """
-        Parses arguments to generate and generates pseudotext.
+        Parses and validates the first three passed arguments.
+        The first can be language or word count (in this case a number),
+        the second word count or character count (depends on the first),
+        the third only character count.
+        The generation language must be known, the word count between
+        5 and 256, the character count between 1 and 3.
+        If all is normal, it will return a list of three generation
+        parameters, if there is an error, it will return a string.
         """
+        returned_params = [
+            lorem_generator.default_language,
+            lorem_generator.default_word_count,
+            lorem_generator.default_chars_len
+        ]
+        params = [language, word_count, char_count]
+        if params[0].isdecimal():
+            # params0 is word count
+            params = [lorem_generator.default_language, params[0], params[1]]
 
-        # parse word_count
-        if word_count is None:
-            word_count = lorem_generator.default_word_count
-        else:
+        # parse
+        if params[0]:
+            returned_params[0] = params[0]
+        if params[1]:
             try:
-                word_count = int(word_count)
+                returned_params[1] = int(params[1])
             except ValueError:
-                return messages["lorem"]["word_error"].format(word_count)
-        if not (5 <= word_count <= 256):
-            return messages["lorem"]["word_count"].format(word_count)
-
-        # parse chars_len
-        if chars_len is None:
-            chars_len = lorem_generator.default_chars_len
-        else:
+                return messages["lorem"]["word_error"].format(params[1])
+        if params[2]:
             try:
-                chars_len = int(chars_len)
+                returned_params[2] = int(params[2])
             except ValueError:
-                return messages["lorem"]["chars_error"].format(chars_len)
-        if not (1 <= chars_len <= 3):
-            return messages["lorem"]["chars_count"].format(chars_len)
+                return messages["lorem"]["char_error"].format(params[2])
 
-        # generate lorem
-        lorem = lorem_generator.generate_lorem(word_count, chars_len)
-        return lorem
+        # validate
+        if returned_params[0] not in lorem_generator.text_data:
+            return messages["lorem"]["lang_error"].format(returned_params[0])
+        if not 5 <= returned_params[1] <= 256:
+            return messages["lorem"]["word_count"].format(returned_params[1])
+        if not 1 <= returned_params[2] <= 3:
+            return messages["lorem"]["char_count"].format(returned_params[2])
+
+        return (returned_params[0], returned_params[1], returned_params[2])
 
     input_text = update.message.text
-    params = get_params(input_text)
-    message = get_response(*params)
+    args = get_params(input_text)
+    input_params = parse_args(*args)
+    if isinstance(input_params, str):
+        message = input_params
+    else:
+        message = lorem_generator.generate_lorem(*input_params)
+
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 

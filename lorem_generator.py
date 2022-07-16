@@ -22,103 +22,185 @@ __all__ = [
 ]
 
 
+# === for preprocessing ===============================================
+# Functions for text preprocessing, not used in the application
+
+def reduce_lines(path, to=None):
+    import re
+    with open(path, "r") as file:
+        text = file.read()
+    text = re.sub(r"\s+", " ", text)
+    result = ""
+    while text:
+        ind = text.find(" ", 70)
+        if ind != -1:
+            result += text[:ind] + "\n"
+            text = text[ind + 1:]
+        else:
+            result += text + "\n"
+            text = ""
+    to = to or path
+    with open(to, "w") as file:
+        file.write(result)
+
+# =====================================================================
+
+
 class LoremGenerator:
-    default_chars_len = 2
+    """
+    A class that generates a lorem.
+    """
+
+    data_directory = "./text_data"
+
+    default_language = "ru"
     default_word_count = 48
+    default_chars_len = 2
+
+    punctuation = r".!?,"
+    lang_chars = {
+        "ru": r"а-яё",
+        "en": r"a-z",
+        "el": r"α-ω",
+    }
+
+    text_data: dict[str, str]
 
     def __init__(self):
-        self.input_text = self.read_text()
+        self.text_data = self.collect_data(self.data_directory)
 
-    @staticmethod
-    def read_text() -> str:
-        data_directory = "./russian_text_data"
-        path = Path(data_directory).absolute()
-        if not path.is_dir():
-            msg = "The directory `russian_text_data` should be in the root of the project"
+        self._multi_dot_pat = re.compile(fr"([{self.punctuation}])+")
+        self._dot_word_pat = re.compile(fr"([{self.punctuation}])([^\s])")
+        self._space_dot_pat = re.compile(fr"(\s)+([{self.punctuation}])")
+        self._sentences_pattern = re.compile(fr"([{self.punctuation}]\s)")
+
+    def collect_data(self, data_directory: str) -> dict[str, str]:
+        """
+        Looks for subfolders of languages and reads all the text from
+        them.
+        """
+
+        data_path = Path(data_directory).absolute()
+        if not data_path.is_dir():
+            msg = "The directory `text_data` should be in the root of the project"
             raise ValueError(msg)
-        files = (
-            file
-            for file in path.iterdir()
-            if str(file).endswith('.txt')
-        )
 
-        text = '\n'.join(open(file, encoding="utf8").read() for file in files)
+        languages = [
+            folder
+            for folder in data_path.iterdir()
+            if folder.is_dir()
+        ]
+        if not languages:
+            raise ValueError("There are no language subfolders in the directory.")
+
+        text_data = dict()
+        for lang_dir in languages:
+            text = self.read_language_data(lang_dir)
+            if text is not None:
+                text_data[lang_dir.name] = text
+
+        return text_data
+
+    def read_language_data(self, lang_dir: Path) -> str | None:
+        """
+        Reads all files in `.txt.` format from a subfolder, joins them
+        into a single text and cleans the resulting text (removes line
+        breaks and extra spaces, translates into lowercase, tries to
+        remove extra characters).
+        """
+        files = [
+            file
+            for file in lang_dir.iterdir()
+            if str(file).endswith(".txt")
+        ]
+        if not files:
+            return None
+
+        text = ""
+        for file_path in files:
+            with open(file_path, "r", encoding="utf8") as file:
+                text += file.read() + "\n"
+
         text = text.lower()
-        text = re.sub(r'[^а-яё\s.!?,]', ' ', text)
-        text = re.sub(r'\s+', ' ', text)
+        chars = self.lang_chars.get(lang_dir.name, None)
+        if chars is not None:
+            text = re.sub(fr"[^{chars}\s{self.punctuation}]", " ", text)
+        text = re.sub(r"\s+", " ", text)
         text = text.strip()
         return text
 
-    def generate_raw_lorem(self, words: int, chars_len: int) -> str:
-        input_text = self.input_text + self.input_text[:chars_len]
-        max_index = len(self.input_text) - chars_len
+    def generate_raw_lorem(self, language: str, words: int, chars_len: int) -> str:
+        """
+        Generates Lorem.
+        To do this, it selects several characters into the buffer, and
+        then searches for them in the text (in a random place), replaces
+        the buffer with the characters next to them, and repeats again.
+        The resulting text is the join of all the buffers used.
+        """
 
-        resulting_text = " "
-        current_chars = ""
+        text = self.text_data[language]
+        text_len = len(text)
+        looped_text = text + text[:chars_len]
 
-        while resulting_text.count(" ") < words + 1:
-            # get chars
-            start = randint(0, max_index)
-            first_index = input_text.find(current_chars, start, max_index)
+        resulting_text = ""
+        buffer = ""
+        while resulting_text.count(" ") < words:
+            start_ind = randint(0, text_len)
+            first_index = looped_text.find(buffer, start_ind, text_len)
             if first_index == -1:
-                first_index = input_text.find(current_chars)
-            first_index += chars_len
-            current_chars = input_text[first_index : first_index + chars_len]
+                first_index = looped_text.find(buffer)
+            next_symbols_ind = first_index + chars_len
 
-            # add chars
-            chars_to_set = current_chars
-
-            if resulting_text[-1] == " " and chars_to_set[0] == " ":
-                # this should not happen, since there are no two spaces
-                # in a row, but still
-                chars_to_set = chars_to_set[1:]
-
-            # no repetitive punctuation characters
-            if (resulting_text[-1] in ".!?,") and (chars_to_set[0] in ".!?,"):
-                chars_to_set = chars_to_set[1:]
-
-            resulting_text += chars_to_set
+            buffer = looped_text[next_symbols_ind: next_symbols_ind + chars_len]
+            resulting_text += buffer
 
         return resulting_text
 
-    @staticmethod
-    def postprocess_lorem(text: str) -> str:
+    def postprocess_lorem(self, text: str) -> str:
         """
-        Processing raw text into humanoid text.
+        Processing raw lorem into correct humanoid text.
         """
-
-        if text[0] == '.':
-            text = text[1:]
-        text = text.lstrip().rstrip()
 
         # only one punctuation mark consecutive
-        dot_dot_pattern = re.compile(r'([.!?,])+')
-        text = dot_dot_pattern.sub(r'\1', text)
+        text = self._multi_dot_pat.sub(r"\1", text)
+
+        # should no punctuation mark at the beginning of
+        if text[0] in self.punctuation:
+            text = text[1:]
+        text = text.strip()
 
         # spaces after punctuation marks
-        dot_word_pattern = re.compile(r'([.!?,])([а-яё])')
-        text = dot_word_pattern.sub(r'\1 \2', text)
+        text = self._dot_word_pat.sub(r"\1 \2", text)
 
         # no spaces before punctuation marks
-        space_dot_pattern = re.compile(r'(\s)+([.!?,])')
-        text = space_dot_pattern.sub(r'\2', text)
+        text = self._space_dot_pat.sub(r"\2", text)
 
         # the first letter in the sentence should be capitalized
-        sentences_pattern = re.compile(r'([.!?]\s)')
-        text = ''.join(
+        text = "".join(
             sentence.capitalize()
-            for sentence in sentences_pattern.split(text)
+            for sentence in self._sentences_pattern.split(text)
         )
 
-        if text[-1] not in ".!?":
+        if text[-1] not in self.punctuation:
             if text[-1] == ",":
                 text = text[:-1]
-            text += '.'
+            text += "."
 
         return text
 
-    def generate_lorem(self, words=default_word_count, chars_len=default_chars_len) -> str:
-        resulting_text = self.generate_raw_lorem(words, chars_len)
+    def generate_lorem(self, language=None, words=None, chars_len=None) -> str:
+        """
+        The main method of the class, generates the Lorem and fixes it
+        to the correct form.
+        """
+
+        words = words or self.default_word_count
+        chars_len = chars_len or self.default_chars_len
+        language = language or self.default_language
+        if language not in self.text_data:
+            raise ValueError(f"Unknown language {language}")
+
+        resulting_text = self.generate_raw_lorem(language, words, chars_len)
         resulting_text = self.postprocess_lorem(resulting_text)
         return resulting_text
 
@@ -126,5 +208,5 @@ class LoremGenerator:
 lorem_generator = LoremGenerator()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(lorem_generator.generate_lorem())
