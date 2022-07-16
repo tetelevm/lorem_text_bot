@@ -72,7 +72,8 @@ class LoremGenerator:
         self._multi_dot_pat = re.compile(fr"([{self.punctuation}])+")
         self._dot_word_pat = re.compile(fr"([{self.punctuation}])([^\s])")
         self._space_dot_pat = re.compile(fr"(\s)+([{self.punctuation}])")
-        self._sentences_pattern = re.compile(fr"([{self.punctuation}]\s)")
+        punct_without_comma = self.punctuation.replace(",", "")
+        self._sentences_pattern = re.compile(fr"([{punct_without_comma}]\s)")
 
     def collect_data(self, data_directory: str) -> dict[str, str]:
         """
