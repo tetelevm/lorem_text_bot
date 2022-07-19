@@ -24,7 +24,11 @@ from handlers import (
 )
 
 
-TOKEN = envs["TOKEN"]
+if envs.get("DEBUG", False):
+    # test bot for development
+    TOKEN = envs["TOKEN_TEST"]
+else:
+    TOKEN = envs["TOKEN"]
 
 
 class NoChangeFilter(BaseFilter):
