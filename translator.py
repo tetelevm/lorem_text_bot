@@ -56,6 +56,8 @@ class BaseTranslator(ABC):
 class YandexTranslator(BaseTranslator):
     """
     Translator via Yandex.Translator. Requires a token for authorization.
+
+    https://translate.yandex.ru/
     """
 
     url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
@@ -75,6 +77,14 @@ class YandexTranslator(BaseTranslator):
 
 
 class LingvanexTranstator(BaseTranslator):
+    """
+    Translator via LingvaNex.
+    The token and api are provided by another developer, who asked to
+    mention it, but did not provide a link to the Github.
+
+    https://lingvanex.com/demo/
+    """
+
     url = "https://api-b2b.backenster.com/b1/api/v3/translate"
     headers = {"authorization": f"Bearer {LINGVANEX_TOKEN}"}
 
@@ -95,6 +105,8 @@ class WatsonTranslator(BaseTranslator):
     """
     Translator via IBM Watson. Oddly enough, it works freely without
     authorization.
+
+    https://www.ibm.com/demos/live/watson-language-translator/self-service/home
     """
 
     url = 'https://www.ibm.com/demos/live/watson-language-translator/api/translate/text'
