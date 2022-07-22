@@ -43,15 +43,25 @@ class BaseTranslator(ABC):
     url: str
     headers: dict
 
-    def __call__(self, text: str, from_lang: str, to_lang: str) -> str:
+    def __call__(self, text: str, from_lang: str = "", to_lang: str = "ru") -> str:
         """
-        Makes a request to the translation service, checks the success
-        of the response (if not, it raises an exception) and returns
-        the translated text.
+        Makes a request to the translation server and fetches the text
+        from the response.
+        """
+
+        response = self.send_request(text, from_lang, to_lang)
+        translated_text = self.parse_response(response.json())
+        return translated_text
+
+    @staticmethod
+    def execute_post(*args, **kwargs) -> requests.Response:
+        """
+        Makes a request, checks for success (if not, it throws an
+        exception) and returns the response.
         """
 
         try:
-            response = self.send_request(text, from_lang, to_lang)
+            response = requests.post(*args, **kwargs)
         except ConnectTimeout:
             msg = f"The translator server is taking too long to respond ({TIMEOUT} seconds)"
             raise TranslationTimeoutException(msg)
@@ -60,7 +70,7 @@ class BaseTranslator(ABC):
             msg = f"Error, response status {response.status_code}"
             raise TranslationRequestException(msg)
 
-        return self.parse_response(response.json())
+        return response
 
     @abstractmethod
     def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
@@ -89,11 +99,12 @@ class YandexTranslator(BaseTranslator):
 
     def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
         body = {
-            "sourceLanguageCode": from_lang,
             "targetLanguageCode": to_lang,
             "texts": [text],
         }
-        return requests.post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
+        if from_lang:
+            body["sourceLanguageCode"] = from_lang
+        return self.execute_post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         # {'translations': [{'text': "Hi, I'm a text for translation."}]}
@@ -114,11 +125,12 @@ class LingvanexTranstator(BaseTranslator):
 
     def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
         body = {
-            "from": from_lang,
             "to": to_lang,
             "text": text,
         }
-        return requests.post(self.url, data=body, headers=self.headers, timeout=TIMEOUT)
+        if from_lang:
+            body["from"] = from_lang
+        return self.execute_post(self.url, data=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         #  {'err': None, 'result': "Hi, I'm a translation text."}
@@ -134,15 +146,36 @@ class WatsonTranslator(BaseTranslator):
     """
 
     url = 'https://www.ibm.com/demos/live/watson-language-translator/api/translate/text'
+    url_detect = 'https://www.ibm.com/demos/live/watson-language-translator/api/translate/detect'
     headers = {}
 
+    def detect_language(self, text: str) -> str:
+        """
+        IBM Watson does not auto-detect the language when translating,
+        it is done by a special request.
+        """
+
+        body = {"text": text}
+        response = self.execute_post(self.url_detect, json=body, headers=self.headers, timeout=TIMEOUT)
+
+        # {"status": "success", "message": "ok", "payload": {
+        #     "languages": [
+        #         {"language": {"language": "ru", "name": "Russian"}, "confidence": 0.99962},
+        #         {"language": {"language": "sr", "name": "Serbian"}, "confidence": 0.00034},
+        #     ]
+        # }}
+        response_data = response.json()
+        return response_data["payload"]["languages"][0]["language"]["language"]
+
     def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
+        if not from_lang:
+            from_lang = self.detect_language(text)
         body = {
             "source": from_lang,
             "target": to_lang,
             "text": text,
         }
-        return requests.post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
+        return self.execute_post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         # {'status': 'success', 'message': 'ok', 'payload': {
