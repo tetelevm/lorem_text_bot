@@ -35,7 +35,7 @@ class Logger(logging.Logger):
         """
         Translates multiline text to a single line.
         """
-        return string.replace("\n", " \\n ")
+        return str(string).replace("\n", " \\n ")
 
     @classmethod
     def get_exc_info(cls, exc: Exception) -> str:

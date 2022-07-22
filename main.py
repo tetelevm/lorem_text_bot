@@ -53,12 +53,14 @@ def add_all_handlers(dispatcher: Dispatcher):
         """
         args = list(args)
         if args:
-            args[0] &= no_change_filter
+            args[0] &= standard_filters
         elif "filters" in kwargs:
-            kwargs["filters"] &= no_change_filter
+            kwargs["filters"] &= standard_filters
         else:
-            args.append(no_change_filter)
+            args.append(standard_filters)
         dispatcher.add_handler(CommandHandler(command, func, *args, **kwargs))
+
+    standard_filters = no_change_filter & Filters.text
 
     add_command("start", command_start, Filters.chat_type.private)
     add_command("help", command_help)
@@ -66,7 +68,7 @@ def add_all_handlers(dispatcher: Dispatcher):
     add_command("translation", command_translation)
 
     dispatcher.add_handler(MessageHandler(
-        Filters.chat_type.private & no_change_filter,
+        Filters.chat_type.private & standard_filters,
         received_message
     ))
 
