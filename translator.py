@@ -5,6 +5,13 @@ from requests.exceptions import ConnectTimeout
 from envs import envs
 
 
+__all__ = [
+    "TranslationRequestException",
+    "TranslationTimeoutException",
+    "translators",
+]
+
+
 YANDEX_TOKEN = envs["YANDEX_TOKEN"]
 LINGVANEX_TOKEN = envs["LINGVANEX_TOKEN"]
 
@@ -144,6 +151,8 @@ class WatsonTranslator(BaseTranslator):
         return response["payload"]["translations"][0]["translation"]
 
 
-yandex_translator = YandexTranslator()
-lingvanex_transtator = LingvanexTranstator()
-watson_translator = WatsonTranslator()
+translators = {
+    "wat": WatsonTranslator(),
+    "yan": YandexTranslator(),
+    "lin": LingvanexTranstator(),
+}

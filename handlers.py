@@ -8,6 +8,7 @@ from telegram.ext import CallbackContext
 from logger import logger, error_logger
 from messages import messages
 from lorem_generator import lorem_generator
+from translator import translators, TranslationTimeoutException, TranslationRequestException
 
 
 __all__ = [

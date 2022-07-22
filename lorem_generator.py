@@ -206,6 +206,9 @@ class LoremGenerator:
         resulting_text = self.postprocess_lorem(resulting_text)
         return resulting_text
 
+    def __call__(self, language=None, words=None, chars_len=None) -> str:
+        return self.generate_lorem(language, words, chars_len)
+
 
 lorem_generator = LoremGenerator()
 
