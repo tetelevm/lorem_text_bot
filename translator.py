@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import requests
+from requests.exceptions import ConnectTimeout
 
 from envs import envs
 
@@ -7,10 +8,19 @@ from envs import envs
 YANDEX_TOKEN = envs["YANDEX_TOKEN"]
 LINGVANEX_TOKEN = envs["LINGVANEX_TOKEN"]
 
+TIMEOUT = 10
 
-class NoConnectException(Exception):
+
+class TranslationRequestException(Exception):
     """
     Exception for an unsuccessful request.
+    """
+    pass
+
+
+class TranslationTimeoutException(Exception):
+    """
+    Server does not respond for more than `TIMEOUT` seconds.
     """
     pass
 
@@ -33,9 +43,16 @@ class BaseTranslator(ABC):
         the translated text.
         """
 
-        response = self.send_request(text, from_lang, to_lang)
+        try:
+            response = self.send_request(text, from_lang, to_lang)
+        except ConnectTimeout:
+            msg = f"The translator server is taking too long to respond ({TIMEOUT} seconds)"
+            raise TranslationTimeoutException(msg)
+
         if response.status_code != 200:  # not `.ok`, just 200
-            raise NoConnectException(f"Error, response status {response.status_code}")
+            msg = f"Error, response status {response.status_code}"
+            raise TranslationRequestException(msg)
+
         return self.parse_response(response.json())
 
     @abstractmethod
@@ -69,7 +86,7 @@ class YandexTranslator(BaseTranslator):
             "targetLanguageCode": to_lang,
             "texts": [text],
         }
-        return requests.post(self.url, json=body, headers=self.headers)
+        return requests.post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         # {'translations': [{'text': "Hi, I'm a text for translation."}]}
@@ -94,7 +111,7 @@ class LingvanexTranstator(BaseTranslator):
             "to": to_lang,
             "text": text,
         }
-        return requests.post(self.url, data=body, headers=self.headers)
+        return requests.post(self.url, data=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         #  {'err': None, 'result': "Hi, I'm a translation text."}
@@ -118,7 +135,7 @@ class WatsonTranslator(BaseTranslator):
             "target": to_lang,
             "text": text,
         }
-        return requests.post(self.url, json=body, headers=self.headers)
+        return requests.post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         # {'status': 'success', 'message': 'ok', 'payload': {
