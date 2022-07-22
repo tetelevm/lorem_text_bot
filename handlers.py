@@ -17,7 +17,6 @@ __all__ = [
     "command_help",
     "command_lorem",
     "command_translation",
-    "command_translorem",
 ]
 
 
@@ -91,7 +90,7 @@ def command_help(update: Update, context: CallbackContext):
     elif params[0] == "/lorem":
         languages = ", ".join(lorem_generator.text_data)
         message = messages["lorem"]["help"].format(languages=languages)
-    elif params[0] in ["/help", "/translation", "/translorem"]:
+    elif params[0] in ["/help", "/translation"]:
         message = messages[params[0][1:]]["help"]
     else:
         message = messages["help"]["unknown"].format(params[0])
@@ -181,14 +180,6 @@ def command_lorem(update: Update, context: CallbackContext):
 
 @handler
 def command_translation(update: Update, context: CallbackContext):
-    """
-    Feature in development.
-    """
-    update.effective_chat.send_message(messages["todo"])
-
-
-@handler
-def command_translorem(update: Update, context: CallbackContext):
     """
     Feature in development.
     """
