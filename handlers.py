@@ -55,12 +55,22 @@ def get_params(text: str) -> List[str]:
 # =====================================================================
 
 
+no_letter_pattern = re.compile(r"\W")
+
 @handler
 def received_message(update: Update, context: CallbackContext):
     """
     Bot does not know how to work with messages, so just a stub.
     """
-    update.effective_chat.send_message(messages["message"])
+    text = update.message.text
+    if text.startswith("/"):
+        command_end = no_letter_pattern.search(text[1:])
+        command_end = (command_end.start() + 1) if command_end else None
+        command = text[:command_end]
+        message = messages["message"]["unknown"].format(command)
+    else:
+        message = messages["message"]["default"]
+    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
 @handler
