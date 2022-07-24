@@ -55,7 +55,7 @@ class LoremGenerator:
     data_directory = "./text_data"
 
     default_language = "ru"
-    default_word_count = 48
+    default_word_count = 64
     default_chars_len = 2
 
     punctuation = r".!?,"

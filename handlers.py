@@ -248,9 +248,10 @@ def command_translate(update: Update, context: CallbackContext):
         ]
         params = [translator_name, from_lang, to_lang]
         if len(params[0]) != 3:
-            params = [text_translator.defaults_translator, params[0], params[1]]
-        if returned_params[0] not in text_translator.translators:
-            return messages["translate"]["translator_error"].format(returned_params[0])
+            # no translator specified
+            params = [returned_params[0], params[0], params[1]]
+        if params[0] not in text_translator.translators:
+            return messages["translate"]["translator_error"].format(params[0])
 
         for param_ind in range(3):
             if params[param_ind]:
