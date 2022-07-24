@@ -1,6 +1,6 @@
 import re
 from functools import wraps
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Union
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext
 from logger import logger, error_logger
 from messages import messages
 from lorem_generator import lorem_generator
-from translator import translators, TranslationTimeoutException, TranslationRequestException
+from translator import text_translator, TranslationTimeoutException, TranslationRequestException
 
 
 __all__ = [
@@ -16,7 +16,7 @@ __all__ = [
     "command_start",
     "command_help",
     "command_lorem",
-    "command_translation",
+    "command_translate",
 ]
 
 
@@ -41,7 +41,7 @@ def handler(func: Callable):
 
 repeated_spaces_pattern = re.compile(r"[\s]+")
 
-def get_params(text: str) -> List[str]:
+def parse_args(text: str) -> List[str]:
     """
     Parses query arguments: splits by spaces and returns everything after
     the first (the command proper).
@@ -93,15 +93,18 @@ def command_help(update: Update, context: CallbackContext):
     """
 
     input_text = update.message.text
-    params = get_params(input_text)
+    params = parse_args(input_text)
 
     if not params:
         message = messages["help"]["default"]
     elif params[0] == "/lorem":
         languages = ", ".join(lorem_generator.text_data)
         message = messages["lorem"]["help"].format(languages=languages)
-    elif params[0] in ["/help", "/translation"]:
-        message = messages[params[0][1:]]["help"]
+    elif params[0] == "/translate":
+        translator_names = ", ".join(text_translator.translators.keys())
+        message = messages["translate"]["help"].format(translators=translator_names)
+    elif params[0] == "/help":
+        message = messages["help"]["help"]
     else:
         message = messages["help"]["unknown"].format(params[0])
 
@@ -116,8 +119,8 @@ def command_help(update: Update, context: CallbackContext):
 def command_lorem(update: Update, context: CallbackContext):
     """
     Returns a lorem-like pseudo-text that looks like a real language.
-    Has 2 optional positional integer arguments - `word count` (5-256)
-    and `characters count` (1-3). Usage:
+    Has 3 optional positional integer arguments - `language`,
+    `word count` (5-256) and `characters count` (1-3). Usage:
     /lorem [lang] [words [chars]]
     /lorem
     /lorem en
@@ -127,12 +130,12 @@ def command_lorem(update: Update, context: CallbackContext):
     /lorem en 128 3
     """
 
-    def parse_args(
+    def get_params(
             language: str = "",
             word_count: str = "",
             char_count: str = "",
             *args
-    ) -> Union[Tuple[str, int, int], str]:
+    ) -> Union[list, str]:
         """
         Parses and validates the first three passed arguments.
         The first can be language or word count (in this case a number),
@@ -175,11 +178,11 @@ def command_lorem(update: Update, context: CallbackContext):
         if not 1 <= returned_params[2] <= 3:
             return messages["lorem"]["char_count"].format(returned_params[2])
 
-        return (returned_params[0], returned_params[1], returned_params[2])
+        return returned_params
 
     input_text = update.message.text
-    args = get_params(input_text)
-    input_params = parse_args(*args)
+    args = parse_args(input_text)
+    input_params = get_params(*args)
     if isinstance(input_params, str):
         message = input_params
     else:
@@ -189,8 +192,71 @@ def command_lorem(update: Update, context: CallbackContext):
 
 
 @handler
-def command_translation(update: Update, context: CallbackContext):
+def command_translate(update: Update, context: CallbackContext):
     """
-    Feature in development.
+    A command to translate text from one language to another.
+    Uses a third-party translation service.
+    Has three launch commands: translator, language_from and language_to.
+    Usage:
+    /translate [translator] [from [to]]
+    /translate
+    /translate lin
+    /translate uk
+    /translate en ja
+    /translate lin de fi
     """
-    update.effective_chat.send_message(messages["todo"])
+
+    def check_text() -> str:
+        """
+        Checks if there is a message in the reply and if there is text
+        in it.
+        """
+        if not update.message.reply_to_message:
+            return messages["translate"]["no_reply"]
+        if not update.message.reply_to_message.text:
+            return messages["translate"]["no_reply_text"]
+        return ""
+
+    def get_params(
+            translator_name: str = "",
+            from_lang: str = "",
+            to_lang: str = "",
+            *args
+    ) -> Union[List[str], str]:
+        """
+        Parses query parameters.
+        It has three parameters - translator and translation languages.
+        The translator must be known (languages, too, but they are
+        different for different translators).
+        """
+        returned_params = [
+            text_translator.defaults_translator,
+            text_translator.default_from,
+            text_translator.default_to,
+        ]
+        params = [translator_name, from_lang, to_lang]
+        if len(params[0]) != 3:
+            params = [text_translator.defaults_translator, params[0], params[1]]
+        if returned_params[0] not in text_translator.translators:
+            return messages["translate"]["translator_error"].format(returned_params[0])
+
+        for param_ind in range(3):
+            if params[param_ind]:
+                returned_params[param_ind] = params[param_ind]
+        return returned_params
+
+    message = check_text()
+    if not message:
+        args = parse_args(update.message.text)
+        params = get_params(*args)
+        if isinstance(params, str):
+            message = params
+        else:
+            text = update.message.reply_to_message.text
+            try:
+                message = text_translator(text, *params)
+            except TranslationTimeoutException:
+                message = messages["translate"]["timeout_error"]
+            except TranslationRequestException:
+                message = messages["translate"]["request_error"]
+    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)

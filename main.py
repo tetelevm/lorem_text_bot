@@ -19,7 +19,7 @@ from handlers import (
     command_start,
     command_help,
     command_lorem,
-    command_translation,
+    command_translate,
 )
 
 
@@ -65,7 +65,7 @@ def add_all_handlers(dispatcher: Dispatcher):
     add_command("start", command_start, Filters.chat_type.private)
     add_command("help", command_help)
     add_command("lorem", command_lorem)
-    add_command("translation", command_translation)
+    add_command("translate", command_translate)
 
     dispatcher.add_handler(MessageHandler(
         Filters.chat_type.private & standard_filters,

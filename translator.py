@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Dict
+
 import requests
 from requests.exceptions import ConnectTimeout
 
@@ -8,7 +10,7 @@ from envs import envs
 __all__ = [
     "TranslationRequestException",
     "TranslationTimeoutException",
-    "translators",
+    "text_translator",
 ]
 
 
@@ -184,8 +186,34 @@ class WatsonTranslator(BaseTranslator):
         return response["payload"]["translations"][0]["translation"]
 
 
-translators = {
-    "wat": WatsonTranslator(),
-    "yan": YandexTranslator(),
-    "lin": LingvanexTranstator(),
-}
+class TextTranslator:
+    defaults_translator = "wat"
+    default_from = ""
+    default_to = "ru"
+    translators: Dict[str, BaseTranslator]
+
+    def __init__(self):
+       self.translators = {
+            "wat": WatsonTranslator(),
+            "yan": YandexTranslator(),
+            "lin": LingvanexTranstator(),
+        }
+
+    def __call__(self, text: str, translator_name: str, from_lang: str, to_lang: str) -> str:
+        translator = self.translators[translator_name]
+        return translator(text, from_lang, to_lang)
+
+
+text_translator = TextTranslator()
+
+
+if __name__ == "__main__":
+    test_text = "I am a text in English, and I am needed for the test."
+    for name in text_translator.translators.keys():
+        translation_result = text_translator(
+            test_text,
+            name,
+            text_translator.default_from,
+            text_translator.default_to
+        )
+        print(translation_result)
