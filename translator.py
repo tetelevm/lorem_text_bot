@@ -10,6 +10,7 @@ from envs import envs
 __all__ = [
     "TranslationRequestException",
     "TranslationTimeoutException",
+    "shared_languages",
     "text_translator",
 ]
 
@@ -18,6 +19,8 @@ YANDEX_TOKEN = envs["YANDEX_TOKEN"]
 LINGVANEX_TOKEN = envs["LINGVANEX_TOKEN"]
 
 TIMEOUT = 10
+
+shared_languages = ["en", "ru", "el", "de", "ja", "fi"]
 
 
 class TranslationRequestException(Exception):

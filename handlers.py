@@ -8,7 +8,12 @@ from telegram.ext import CallbackContext
 from logger import logger, error_logger
 from messages import messages
 from lorem_generator import lorem_generator
-from translator import text_translator, TranslationTimeoutException, TranslationRequestException
+from translator import (
+    text_translator,
+    shared_languages,
+    TranslationTimeoutException,
+    TranslationRequestException,
+)
 
 
 __all__ = [
@@ -17,6 +22,7 @@ __all__ = [
     "command_help",
     "command_lorem",
     "command_translate",
+    "command_generate",
 ]
 
 
@@ -102,9 +108,15 @@ def command_help(update: Update, context: CallbackContext):
         message = messages["lorem"]["help"].format(languages=languages)
     elif params[0] == "/translate":
         translator_names = ", ".join(text_translator.translators.keys())
-        message = messages["translate"]["help"].format(translators=translator_names)
+        shared = ", ".join(shared_languages)
+        message = messages["translate"]["help"].format(
+            translators=translator_names,
+            shared=shared
+        )
     elif params[0] == "/help":
         message = messages["help"]["help"]
+    elif params[0] == "/generate":
+        message = messages["generate"]["help"]
     else:
         message = messages["help"]["unknown"].format(params[0])
 
@@ -260,3 +272,14 @@ def command_translate(update: Update, context: CallbackContext):
             except TranslationRequestException:
                 message = messages["translate"]["request_error"]
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
+
+
+@handler
+def command_generate(update: Update, context: CallbackContext):
+    """
+    Generates a lorem with random parameters, then translates to other
+    languages a random number of times and displays the translation in
+    Russian.
+    """
+
+    update.effective_chat.send_message(messages["todo"])
