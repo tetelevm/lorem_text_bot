@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List
 
 import requests
-from requests.exceptions import ConnectTimeout
+from requests.exceptions import Timeout
 
 from envs import envs
 
@@ -67,7 +67,7 @@ class BaseTranslator(ABC):
 
         try:
             response = requests.post(*args, **kwargs)
-        except ConnectTimeout:
+        except Timeout:
             msg = f"The translator server is taking too long to respond ({TIMEOUT} seconds)"
             raise TranslationTimeoutException(msg)
 
