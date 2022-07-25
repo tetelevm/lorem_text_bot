@@ -198,7 +198,7 @@ class TextTranslator:
     def __init__(self):
        self.translators = {
             "wat": WatsonTranslator(),
-            "yan": YandexTranslator(),
+            # "yan": YandexTranslator(),
             "lin": LingvanexTranstator(),
         }
 
