@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, List
 
 import requests
 from requests.exceptions import ConnectTimeout
@@ -161,7 +161,12 @@ class WatsonTranslator(BaseTranslator):
         """
 
         body = {"text": text}
-        response = self.execute_post(self.url_detect, json=body, headers=self.headers, timeout=TIMEOUT)
+        response = self.execute_post(
+            self.url_detect,
+            json=body,
+            headers=self.headers,
+            timeout=TIMEOUT
+        )
 
         # {"status": "success", "message": "ok", "payload": {
         #     "languages": [
@@ -194,13 +199,15 @@ class TextTranslator:
     default_from = ""
     default_to = "ru"
     translators: Dict[str, BaseTranslator]
+    translator_names: List[str]
 
     def __init__(self):
-       self.translators = {
+        self.translators = {
             "wat": WatsonTranslator(),
             # "yan": YandexTranslator(),
             "lin": LingvanexTranstator(),
         }
+        self.translator_names = list(self.translators)
 
     def __call__(self, text: str, translator_name: str, from_lang: str, to_lang: str) -> str:
         translator = self.translators[translator_name]
@@ -212,7 +219,7 @@ text_translator = TextTranslator()
 
 if __name__ == "__main__":
     test_text = "I am a text in English, and I am needed for the test."
-    for name in text_translator.translators.keys():
+    for name in text_translator.translator_names:
         translation_result = text_translator(
             test_text,
             name,

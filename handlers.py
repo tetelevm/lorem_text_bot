@@ -104,10 +104,10 @@ def command_help(update: Update, context: CallbackContext):
     if not params:
         message = messages["help"]["default"]
     elif params[0] == "/lorem":
-        languages = ", ".join(lorem_generator.text_data)
+        languages = ", ".join(lorem_generator.languages)
         message = messages["lorem"]["help"].format(languages=languages)
     elif params[0] == "/translate":
-        translator_names = ", ".join(text_translator.translators.keys())
+        translator_names = ", ".join(text_translator.translator_names)
         shared = ", ".join(shared_languages)
         message = messages["translate"]["help"].format(
             translators=translator_names,
@@ -183,7 +183,7 @@ def command_lorem(update: Update, context: CallbackContext):
                 return messages["lorem"]["char_error"].format(params[2])
 
         # validate
-        if returned_params[0] not in lorem_generator.text_data:
+        if returned_params[0] not in lorem_generator.languages:
             return messages["lorem"]["lang_error"].format(returned_params[0])
         if not 5 <= returned_params[1] <= 256:
             return messages["lorem"]["word_count"].format(returned_params[1])
@@ -250,7 +250,7 @@ def command_translate(update: Update, context: CallbackContext):
         if len(params[0]) != 3:
             # no translator specified
             params = [returned_params[0], params[0], params[1]]
-        if params[0] not in text_translator.translators:
+        if params[0] not in text_translator.translator_names:
             return messages["translate"]["translator_error"].format(params[0])
 
         for param_ind in range(3):

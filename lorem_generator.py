@@ -15,7 +15,7 @@ The algorithm is as follows:
 import re
 from random import randint
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 
 __all__ = [
@@ -66,9 +66,11 @@ class LoremGenerator:
     }
 
     text_data: Dict[str, str]
+    languages: List[str]
 
     def __init__(self):
         self.text_data = self.collect_data(self.data_directory)
+        self.languages = list(self.text_data)
 
         self._multi_dot_pat = re.compile(fr"([{self.punctuation}])+")
         self._dot_word_pat = re.compile(fr"([{self.punctuation}])([^\s])")
@@ -199,7 +201,7 @@ class LoremGenerator:
         words = words or self.default_word_count
         chars_len = chars_len or self.default_chars_len
         language = language or self.default_language
-        if language not in self.text_data:
+        if language not in self.languages:
             raise ValueError(f"Unknown language {language}")
 
         resulting_text = self.generate_raw_lorem(language, words, chars_len)
