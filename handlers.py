@@ -1,6 +1,7 @@
 import re
+import random
 from functools import wraps
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Tuple
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -281,6 +282,47 @@ def command_generate(update: Update, context: CallbackContext):
     Generates a lorem with random parameters, then translates to other
     languages a random number of times and displays the translation in
     Russian.
+    Usage:
+    /generate
     """
 
-    update.effective_chat.send_message(messages["todo"])
+    def translate(current_text, fr: str, to: str) -> Tuple[str, bool]:
+        """
+        Translates and catches errors. Transmits the result and a
+        success flag.
+        """
+        translator = random.choice(text_translator.translator_names)
+        try:
+            return text_translator(current_text, translator, fr, to), True
+        except TranslationTimeoutException:
+            return messages["translate"]["timeout_error"], False
+        except TranslationRequestException:
+            return messages["translate"]["request_error"], False
+
+    # lorem generation
+    lorem_params = [
+        random.choice(lorem_generator.languages),
+        random.randint(32, 128),
+        random.randint(1, 3)
+    ]
+    language = lorem_params[0]
+    text = lorem_generator(*lorem_params)
+
+    # a few translations through different languages
+    count = random.randint(1, 3)
+    for _ in range(count):
+        to_language = random.choice([
+            lang
+            for lang in shared_languages
+            if lang != language
+        ])
+        text, succ = translate(text, language, to_language)
+        if not succ:
+            break
+        language = to_language
+    else:
+        # translated without errors, translate the current text into Russian
+        if language != "ru":
+            text, _ = translate(text, language, "ru")
+
+    update.effective_chat.send_message(text)
