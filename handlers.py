@@ -24,6 +24,7 @@ __all__ = [
     "command_lorem",
     "command_translate",
     "command_generate",
+    "command_generate_absurd",
 ]
 
 
@@ -114,10 +115,12 @@ def command_help(update: Update, context: CallbackContext):
             translators=translator_names,
             shared=shared
         )
-    elif params[0] == "/help":
-        message = messages["help"]["help"]
     elif params[0] == "/generate":
         message = messages["generate"]["help"]
+    elif params[0] == "/generate_absurd":
+        message = messages["generate_absurd"]["help"]
+    elif params[0] == "/help":
+        message = messages["help"]["help"]
     else:
         message = messages["help"]["unknown"].format(params[0])
 
@@ -279,11 +282,32 @@ def command_translate(update: Update, context: CallbackContext):
 @handler
 def command_generate(update: Update, context: CallbackContext):
     """
+    Generates a small phrase in Russian via lorem and then translates it
+    using IBM Watson as Ukrainian.
+    Usage:
+    /generate
+    """
+
+    text = lorem_generator("ru", 16, 2)
+
+    try:
+        message = text_translator(text, "wat", "uk", "ru")
+    except TranslationTimeoutException:
+        message = messages["translate"]["timeout_error"]
+    except TranslationRequestException:
+        message = messages["translate"]["request_error"]
+
+    update.effective_chat.send_message(message)
+
+
+@handler
+def command_generate_absurd(update: Update, context: CallbackContext):
+    """
     Generates a lorem with random parameters, then translates to other
     languages a random number of times and displays the translation in
     Russian.
     Usage:
-    /generate
+    /generate_absurd
     """
 
     def translate(current_text, fr: str, to: str) -> Tuple[str, bool]:
