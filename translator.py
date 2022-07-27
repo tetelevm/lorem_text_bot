@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-YANDEX_TOKEN = envs["YANDEX_TOKEN"]
+YANDEX_TOKEN = ""  # envs["YANDEX_TOKEN"]  # the translator is disabled, so no token
 LINGVANEX_TOKEN = envs["LINGVANEX_TOKEN"]
 
 TIMEOUT = 10
