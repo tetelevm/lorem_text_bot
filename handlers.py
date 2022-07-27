@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext
 
 from logger import logger, error_logger
 from messages import messages
-from lorem_generator import lorem_generator
+from lorem_generator import lorem_generator, chinese_generator
 from translator import (
     text_translator,
     shared_languages,
@@ -25,6 +25,7 @@ __all__ = [
     "command_translate",
     "command_generate",
     "command_generate_absurd",
+    "command_chinese",
 ]
 
 
@@ -58,6 +59,20 @@ def parse_args(text: str) -> List[str]:
     text = repeated_spaces_pattern.sub(" ", text)
     params = text.strip().split(" ")
     return params[1:]
+
+
+def translate(text: str, *params) -> Tuple[str, bool]:
+    """
+    Makes a translation and catches errors. Returns 2 arguments - the
+    text and the success of the translation.
+    """
+
+    try:
+        return text_translator(text, *params), True
+    except TranslationTimeoutException:
+        return messages["translate"]["timeout_error"], False
+    except TranslationRequestException:
+        return messages["translate"]["request_error"], False
 
 
 # =====================================================================
@@ -119,6 +134,8 @@ def command_help(update: Update, context: CallbackContext):
         message = messages["generate"]["help"]
     elif params[0] == "/generate_absurd":
         message = messages["generate_absurd"]["help"]
+    elif params[0] == "/chinese":
+        message = messages["chinese"]["help"]
     elif params[0] == "/help":
         message = messages["help"]["help"]
     else:
@@ -270,12 +287,7 @@ def command_translate(update: Update, context: CallbackContext):
             message = params
         else:
             text = update.message.reply_to_message.text
-            try:
-                message = text_translator(text, *params)
-            except TranslationTimeoutException:
-                message = messages["translate"]["timeout_error"]
-            except TranslationRequestException:
-                message = messages["translate"]["request_error"]
+            message, _ = translate(text, *params)
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
@@ -289,15 +301,8 @@ def command_generate(update: Update, context: CallbackContext):
     """
 
     text = lorem_generator("ru", 16, 2)
-
-    try:
-        message = text_translator(text, "wat", "uk", "ru")
-    except TranslationTimeoutException:
-        message = messages["translate"]["timeout_error"]
-    except TranslationRequestException:
-        message = messages["translate"]["request_error"]
-
-    update.effective_chat.send_message(message)
+    message, _ = translate(text, "wat", "uk", "ru")
+    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
 @handler
@@ -310,20 +315,6 @@ def command_generate_absurd(update: Update, context: CallbackContext):
     /generate_absurd
     """
 
-    def translate(current_text, fr: str, to: str) -> Tuple[str, bool]:
-        """
-        Translates and catches errors. Transmits the result and a
-        success flag.
-        """
-        translator = random.choice(text_translator.translator_names)
-        try:
-            return text_translator(current_text, translator, fr, to), True
-        except TranslationTimeoutException:
-            return messages["translate"]["timeout_error"], False
-        except TranslationRequestException:
-            return messages["translate"]["request_error"], False
-
-    # lorem generation
     lorem_params = [
         random.choice(lorem_generator.languages),
         random.randint(32, 128),
@@ -340,13 +331,31 @@ def command_generate_absurd(update: Update, context: CallbackContext):
             for lang in shared_languages
             if lang != language
         ])
-        text, succ = translate(text, language, to_language)
+        translator = random.choice(text_translator.translator_names)
+        text, succ = translate(text, translator, language, to_language)
         if not succ:
             break
         language = to_language
     else:
         # translated without errors, translate the current text into Russian
         if language != "ru":
-            text, _ = translate(text, language, "ru")
+            translator = random.choice(text_translator.translator_names)
+            text, _ = translate(text, translator, language, "ru")
 
-    update.effective_chat.send_message(text)
+    update.effective_chat.send_message(text, parse_mode=ParseMode.HTML)
+
+
+@handler
+def command_chinese(update: Update, context: CallbackContext):
+    """
+    Takes a random number of Chinese characters (in the range of 8-24)
+    from a large set and translates them into Russian. It turns out
+    interesting.
+    Usage:
+    /chinese
+    """
+
+    count = random.randint(8, 24)
+    ch_text = chinese_generator.get_chinese(count)
+    message, _ = translate(ch_text, "lin", "zh-Hans_CN", "ru")
+    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)

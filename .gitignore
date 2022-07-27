@@ -4,5 +4,6 @@ __pycache__/
 .idea/
 
 .envs
+text_data/*.txt*
 text_data/*/*.txt*
 logs/*.txt

@@ -20,3 +20,6 @@ Example text (in Russian with characters `[а-яё\s.!?,]`):
 его под собственной кроватью. лосяш невольно сбивает с толку ёжика, заставляя
 того реализовать на практике свою очередную бесплодную научную теорию.
 ```
+
+A file `chinese.txt` is also needed with a large set of Chinese characters in
+that directory. The file is needed in order to generate Chinese text.

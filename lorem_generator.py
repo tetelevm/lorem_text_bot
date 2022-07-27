@@ -20,6 +20,7 @@ from typing import Dict, Union, List
 
 __all__ = [
     "lorem_generator",
+    "chinese_generator",
 ]
 
 
@@ -212,8 +213,45 @@ class LoremGenerator:
         return self.generate_lorem(language, words, chars_len)
 
 
+class ChineseGenerator:
+    """
+    A class for a small task - storing text in Chinese and giving out a
+    random number of characters from it.
+    """
+
+    chinese_path = "./text_data/chinese.txt"
+
+    chinese: str
+    len: int
+
+    def __init__(self):
+        with open(self.chinese_path, "r", encoding="utf8") as chinese_file:
+            self.chinese = chinese_file.read()
+        self.len = len(self.chinese)
+
+    def get_chinese(self, count: int) -> str:
+        """
+        Returns several consecutive Chinese characters from a random
+        place in the text.
+        """
+
+        if count > self.len:
+            raise ValueError(f"Requires more text ({count}) than there is ({self.len})")
+
+        cursor = randint(0, self.len)
+        if cursor + count < self.len:
+            return self.chinese[cursor:cursor+count]
+
+        first_part = self.chinese[cursor:]
+        second_part = self.chinese[:count - (self.len-cursor) + 1]
+        return first_part + second_part
+
+
 lorem_generator = LoremGenerator()
+chinese_generator = ChineseGenerator()
 
 
 if __name__ == "__main__":
     print(lorem_generator.generate_lorem())
+    print()
+    print(chinese_generator.get_chinese(48))

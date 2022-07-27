@@ -1,4 +1,4 @@
-__version__ = "0.87"
+__version__ = "0.9"
 
 from typing import Callable
 
@@ -22,6 +22,7 @@ from handlers import (
     command_translate,
     command_generate,
     command_generate_absurd,
+    command_chinese,
 )
 
 
@@ -67,6 +68,7 @@ def add_all_handlers(dispatcher: Dispatcher):
     add_command("start", command_start, Filters.chat_type.private)
     add_command("generate_absurd", command_generate_absurd)
     add_command("generate", command_generate)
+    add_command("chinese", command_chinese)
     add_command("lorem", command_lorem)
     add_command("translate", command_translate)
     add_command("help", command_help)

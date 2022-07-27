@@ -52,6 +52,7 @@ You can run it locally or on a hosting server. To run you need:
 its own variables
 - fill directory `text_data/` with subdirectories with texts for generation (a
 small description is in `text_data/.gitkeep`)
+- add a file `chinese.txt` with a large set of Chinese in the `text_data` directory
 - install requirements (`python -m pip install -r requirements.txt`)
 
 And after that you can start the project. The required version of Python to run
