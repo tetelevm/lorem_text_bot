@@ -26,7 +26,7 @@ If you know Greek, you will know that this is an absurd text with pseudo-words
 (which don't exist in the real language), if you don't, just believe it. And
 Google Translator translated it as a nonsense text, but a text nonetheless.
 
-# What can do
+### What can do
 
 The bot has two features: a pseudotext generator and a translator.
 
