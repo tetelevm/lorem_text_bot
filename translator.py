@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Final
 
-import requests
-from requests.exceptions import Timeout
+import aiohttp
+from asyncio.exceptions import TimeoutError
 
 from envs import envs
 
@@ -15,12 +15,12 @@ __all__ = [
 ]
 
 
-YANDEX_TOKEN = ""  # envs["YANDEX_TOKEN"]  # the translator is disabled, so no token
-LINGVANEX_TOKEN = envs["LINGVANEX_TOKEN"]
+shared_languages: Final[tuple] = ("en", "ru", "el", "de", "ja", "fi")
+
+YANDEX_TOKEN: Final[str] = ""  # envs["YANDEX_TOKEN"]  # the translator is disabled, so no token
+LINGVANEX_TOKEN: Final[str] = envs["LINGVANEX_TOKEN"]
 
 TIMEOUT = 10
-
-shared_languages = ["en", "ru", "el", "de", "ja", "fi"]
 
 
 class TranslationRequestException(Exception):
@@ -42,45 +42,47 @@ class BaseTranslator(ABC):
     A basic class for all translators.
     The descendants store the url, the headers and contain methods for
     requesting and parsing the response.
-    Usage is done through object call.
+    Usage is done through object call. Works asynchronously.
     """
 
     url: str
     headers: dict
 
-    def __call__(self, text: str, from_lang: str = "", to_lang: str = "ru") -> str:
+    async def __call__(self, text: str, from_lang: str = "", to_lang: str = "ru") -> str:
         """
         Makes a request to the translation server and fetches the text
         from the response.
         """
 
-        response = self.send_request(text, from_lang, to_lang)
-        translated_text = self.parse_response(response.json())
+        response_json = await self.send_request(text, from_lang, to_lang)
+        translated_text = self.parse_response(response_json)
         return translated_text
 
     @staticmethod
-    def execute_post(*args, **kwargs) -> requests.Response:
+    async def execute_post(*args, **kwargs) -> dict:
         """
         Makes a request, checks for success (if not, it throws an
         exception) and returns the response.
         """
 
+        session = aiohttp.ClientSession()
         try:
-            response = requests.post(*args, **kwargs)
-        except Timeout:
+            async with session.post(*args, **kwargs) as response:
+                if response.status != 200:  # not `.ok`, just 200
+                    msg = f"Error, response status {response.status}"
+                    raise TranslationRequestException(msg)
+                return await response.json()
+        except TimeoutError:
             msg = f"The translator server is taking too long to respond ({TIMEOUT} seconds)"
             raise TranslationTimeoutException(msg)
-
-        if response.status_code != 200:  # not `.ok`, just 200
-            msg = f"Error, response status {response.status_code}"
-            raise TranslationRequestException(msg)
-
-        return response
+        finally:
+            await session.close()
 
     @abstractmethod
-    def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
+    async def send_request(self, text: str, from_lang: str, to_lang: str) -> dict:
         """
-        The method for sending the request.
+        The method for sending the request. Must call the `.execute_post`
+        method.
         """
         pass
 
@@ -102,14 +104,14 @@ class YandexTranslator(BaseTranslator):
     url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
     headers = {"Authorization": f"Api-Key {YANDEX_TOKEN}"}
 
-    def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
+    async def send_request(self, text: str, from_lang: str, to_lang: str) -> dict:
         body = {
             "targetLanguageCode": to_lang,
             "texts": [text],
         }
         if from_lang:
             body["sourceLanguageCode"] = from_lang
-        return self.execute_post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
+        return await self.execute_post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         # {'translations': [{'text': "Hi, I'm a text for translation."}]}
@@ -128,14 +130,14 @@ class LingvanexTranstator(BaseTranslator):
     url = "https://api-b2b.backenster.com/b1/api/v3/translate"
     headers = {"authorization": f"Bearer {LINGVANEX_TOKEN}"}
 
-    def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
+    async def send_request(self, text: str, from_lang: str, to_lang: str) -> dict:
         body = {
             "to": to_lang,
             "text": text,
         }
         if from_lang:
             body["from"] = from_lang
-        return self.execute_post(self.url, data=body, headers=self.headers, timeout=TIMEOUT)
+        return await self.execute_post(self.url, data=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         #  {'err': None, 'result': "Hi, I'm a translation text."}
@@ -150,20 +152,19 @@ class WatsonTranslator(BaseTranslator):
     https://www.ibm.com/demos/live/watson-language-translator/self-service/home
     """
 
-    url = 'https://www.ibm.com/demos/live/watson-language-translator/api/translate/text'
-    url_detect = 'https://www.ibm.com/demos/live/watson-language-translator/api/translate/detect'
+    url = "https://www.ibm.com/demos/live/watson-language-translator/api/translate/text"
+    url_detect = "https://www.ibm.com/demos/live/watson-language-translator/api/translate/detect"
     headers = {}
 
-    def detect_language(self, text: str) -> str:
+    async def detect_language(self, text: str) -> str:
         """
         IBM Watson does not auto-detect the language when translating,
         it is done by a special request.
         """
 
-        body = {"text": text}
-        response = self.execute_post(
+        response_data = await self.execute_post(
             self.url_detect,
-            json=body,
+            data= {"text": text},
             headers=self.headers,
             timeout=TIMEOUT
         )
@@ -174,18 +175,17 @@ class WatsonTranslator(BaseTranslator):
         #         {"language": {"language": "sr", "name": "Serbian"}, "confidence": 0.00034},
         #     ]
         # }}
-        response_data = response.json()
         return response_data["payload"]["languages"][0]["language"]["language"]
 
-    def send_request(self, text: str, from_lang: str, to_lang: str) -> requests.Response:
+    async def send_request(self, text: str, from_lang: str, to_lang: str) -> dict:
         if not from_lang:
-            from_lang = self.detect_language(text)
+            from_lang = await self.detect_language(text)
         body = {
             "source": from_lang,
             "target": to_lang,
             "text": text,
         }
-        return self.execute_post(self.url, json=body, headers=self.headers, timeout=TIMEOUT)
+        return await self.execute_post(self.url, data=body, headers=self.headers, timeout=TIMEOUT)
 
     def parse_response(self, response: dict) -> str:
         # {'status': 'success', 'message': 'ok', 'payload': {
@@ -209,21 +209,24 @@ class TextTranslator:
         }
         self.translator_names = list(self.translators)
 
-    def __call__(self, text: str, translator_name: str, from_lang: str, to_lang: str) -> str:
+    async def __call__(self, text: str, translator_name: str, from_lang: str, to_lang: str) -> str:
         translator = self.translators[translator_name]
-        return translator(text, from_lang, to_lang)
+        return await translator(text, from_lang, to_lang)
 
 
 text_translator = TextTranslator()
 
 
 if __name__ == "__main__":
+    import asyncio
+
     test_text = "I am a text in English, and I am needed for the test."
     for name in text_translator.translator_names:
-        translation_result = text_translator(
+        coro = text_translator(
             test_text,
             name,
             text_translator.default_from,
             text_translator.default_to
         )
+        translation_result = asyncio.run(coro)
         print(translation_result)

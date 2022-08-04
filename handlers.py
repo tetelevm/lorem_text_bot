@@ -1,12 +1,10 @@
 import re
 import random
-from functools import wraps
-from typing import Callable, List, Union, Tuple
+from typing import List, Union, Tuple
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 
-from logger import logger, error_logger
 from messages import messages
 from lorem_generator import lorem_generator, chinese_generator
 from translator import (
@@ -29,25 +27,6 @@ __all__ = [
 ]
 
 
-def handler(func: Callable):
-    """
-    Decorator for handlers. Logs requests and catches errors.
-    When crashes, it writes logs to a special file and outputs a
-    standard error message.
-    """
-
-    @wraps(func)
-    def wrapper(update: Update, context: CallbackContext):
-        logger.info(f"   Req >>| {logger.flatten_string(update.message.text)}")
-        try:
-            func(update, context)
-        except Exception as exc:
-            error_logger.error(error_logger.get_full_exc_info(exc))
-            logger.error(logger.get_exc_info(exc))
-            update.effective_chat.send_message(messages["error"])
-    return wrapper
-
-
 repeated_spaces_pattern = re.compile(r"[\s]+")
 
 def parse_args(text: str) -> List[str]:
@@ -61,14 +40,15 @@ def parse_args(text: str) -> List[str]:
     return params[1:]
 
 
-def translate(text: str, *params) -> Tuple[str, bool]:
+async def translate(text: str, *params) -> Tuple[str, bool]:
     """
     Makes a translation and catches errors. Returns 2 arguments - the
     text and the success of the translation.
     """
 
     try:
-        return text_translator(text, *params), True
+        result = await text_translator(text, *params)
+        return result, True
     except TranslationTimeoutException:
         return messages["translate"]["timeout_error"], False
     except TranslationRequestException:
@@ -80,8 +60,7 @@ def translate(text: str, *params) -> Tuple[str, bool]:
 
 no_letter_pattern = re.compile(r"\W")
 
-@handler
-def received_message(update: Update, context: CallbackContext):
+async def received_message(update: Update, context: CallbackContext):
     """
     Bot does not know how to work with messages, so just a stub.
     """
@@ -96,8 +75,7 @@ def received_message(update: Update, context: CallbackContext):
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
-@handler
-def command_start(update: Update, context: CallbackContext):
+async def command_start(update: Update, context: CallbackContext):
     """
     Standard welcome.
     """
@@ -107,8 +85,7 @@ def command_start(update: Update, context: CallbackContext):
     )
 
 
-@handler
-def command_help(update: Update, context: CallbackContext):
+async def command_help(update: Update, context: CallbackContext):
     """
     Displays either general help or help for a known command. Usage:
     /help
@@ -148,8 +125,7 @@ def command_help(update: Update, context: CallbackContext):
     )
 
 
-@handler
-def command_lorem(update: Update, context: CallbackContext):
+async def command_lorem(update: Update, context: CallbackContext):
     """
     Returns a lorem-like pseudo-text that looks like a real language.
     Has 3 optional positional integer arguments - `language`,
@@ -224,8 +200,7 @@ def command_lorem(update: Update, context: CallbackContext):
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
-@handler
-def command_translate(update: Update, context: CallbackContext):
+async def command_translate(update: Update, context: CallbackContext):
     """
     A command to translate text from one language to another.
     Uses a third-party translation service.
@@ -287,12 +262,11 @@ def command_translate(update: Update, context: CallbackContext):
             message = params
         else:
             text = update.message.reply_to_message.text
-            message, _ = translate(text, *params)
+            message, _ = await translate(text, *params)
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
-@handler
-def command_generate(update: Update, context: CallbackContext):
+async def command_generate(update: Update, context: CallbackContext):
     """
     Generates a small phrase in Russian via lorem and then translates it
     using IBM Watson as Ukrainian.
@@ -301,12 +275,11 @@ def command_generate(update: Update, context: CallbackContext):
     """
 
     text = lorem_generator("ru", 16, 2)
-    message, _ = translate(text, "wat", "uk", "ru")
+    message, _ = await translate(text, "wat", "uk", "ru")
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
-@handler
-def command_generate_absurd(update: Update, context: CallbackContext):
+async def command_generate_absurd(update: Update, context: CallbackContext):
     """
     Generates a lorem with random parameters, then translates to other
     languages a random number of times and displays the translation in
@@ -332,7 +305,7 @@ def command_generate_absurd(update: Update, context: CallbackContext):
             if lang != language
         ])
         translator = random.choice(text_translator.translator_names)
-        text, succ = translate(text, translator, language, to_language)
+        text, succ = await translate(text, translator, language, to_language)
         if not succ:
             break
         language = to_language
@@ -340,13 +313,12 @@ def command_generate_absurd(update: Update, context: CallbackContext):
         # translated without errors, translate the current text into Russian
         if language != "ru":
             translator = random.choice(text_translator.translator_names)
-            text, _ = translate(text, translator, language, "ru")
+            text, _ = await translate(text, translator, language, "ru")
 
     update.effective_chat.send_message(text, parse_mode=ParseMode.HTML)
 
 
-@handler
-def command_chinese(update: Update, context: CallbackContext):
+async def command_chinese(update: Update, context: CallbackContext):
     """
     Takes a random number of Chinese characters (in the range of 8-24)
     from a large set and translates them into Russian. It turns out
@@ -357,5 +329,5 @@ def command_chinese(update: Update, context: CallbackContext):
 
     count = random.randint(8, 24)
     ch_text = chinese_generator.get_chinese(count)
-    message, _ = translate(ch_text, "lin", "zh-Hans_CN", "ru")
+    message, _ = await translate(ch_text, "lin", "zh-Hans_CN", "ru")
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
