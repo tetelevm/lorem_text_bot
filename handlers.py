@@ -269,13 +269,13 @@ async def command_translate(update: Update, context: CallbackContext):
 async def command_generate(update: Update, context: CallbackContext):
     """
     Generates a small phrase in Russian via lorem and then translates it
-    using IBM Watson as Ukrainian.
+    using LingvaNex as Bulgarian.
     Usage:
     /generate
     """
 
-    text = lorem_generator("ru", 16, 2)
-    message, _ = await translate(text, "wat", "uk", "ru")
+    text = lorem_generator("ru", 24, 2)
+    message, _ = await translate(text, "lin", "bg", "ru")
     update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 

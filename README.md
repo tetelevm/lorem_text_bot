@@ -37,7 +37,7 @@ another.
 
 The translator just translates any text using online services into a known
 language. Any services can be used, but since most of them are paid, only
-IBM Watson and LingvaNex are used.
+LingvaNex are used.
 
 All bot commands use these features, combining them in some way.
 
