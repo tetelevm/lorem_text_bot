@@ -1,7 +1,6 @@
 from functools import wraps
 from typing import Callable
 
-import asyncio
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import (
@@ -15,7 +14,9 @@ from telegram.ext import (
 
 from logger import logger, error_logger
 from messages import messages
+from async_runner import run_coro, AlreadyRunError, loop
 from handlers import (
+    HandlersType,
     received_message,
     command_start,
     command_help,
@@ -32,18 +33,24 @@ __all__ = [
 ]
 
 
-def handler(func: Callable):
+def handler(func: HandlersType):
     """
     Decorator for handlers. Logs requests and catches errors.
     When crashes, it writes logs to a special file and outputs a
     standard error message.
+
+    # TODO: asynchrony does not work as it should (that is, it does not
+        work at all :) )
     """
 
     @wraps(func)
     def wrapper(update: Update, context: CallbackContext):
         logger.info(f"   Req >>| {logger.flatten_string(update.message.text)}")
         try:
-            asyncio.run(func(update, context))
+            coro = run_coro(update.message.from_user.id, func(update, context))
+            loop.run_until_complete(coro)
+        except AlreadyRunError:
+            update.effective_chat.send_message(messages["already_run"])
         except Exception as exc:
             error_logger.error(error_logger.get_full_exc_info(exc))
             logger.error(logger.get_exc_info(exc))
@@ -56,7 +63,6 @@ class NoChangeFilter(BaseFilter):
     """
     Filter for new messages only, edited messages are ignored.
     """
-    __slots__ = ()
     def __call__(self, update: Update) -> bool:
         return bool(update.message)
 
@@ -111,4 +117,3 @@ def bot_main(token):
     updater.start_polling()
     logger("Bot has started")
     print("Bot has started")
-    updater.idle()

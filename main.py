@@ -1,7 +1,8 @@
-__version__ = "0.95"
+__version__ = "0.97"
 
 from envs import envs
 from bot import bot_main
+from async_runner import loop
 
 
 if envs.get("DEBUG", False):
@@ -10,5 +11,5 @@ if envs.get("DEBUG", False):
 else:
     TOKEN = envs["TOKEN"]
 
-
-bot_main(TOKEN)
+# Initializing the bot and starting the run cycle
+loop.run_until_complete(loop.run_in_executor(None, bot_main, TOKEN))

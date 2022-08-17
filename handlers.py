@@ -1,6 +1,6 @@
 import re
 import random
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Callable, Coroutine
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -16,6 +16,7 @@ from translator import (
 
 
 __all__ = [
+    "HandlersType",
     "received_message",
     "command_start",
     "command_help",
@@ -25,6 +26,9 @@ __all__ = [
     "command_generate_absurd",
     "command_chinese",
 ]
+
+
+HandlersType = Callable[[Update, CallbackContext], Coroutine]
 
 
 repeated_spaces_pattern = re.compile(r"[\s]+")
