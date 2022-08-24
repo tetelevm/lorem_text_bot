@@ -164,7 +164,7 @@ class WatsonTranslator(BaseTranslator):
 
         response_data = await self.execute_post(
             self.url_detect,
-            data={"text": text},
+            data= {"text": text},
             headers=self.headers,
             timeout=TIMEOUT
         )
@@ -195,7 +195,7 @@ class WatsonTranslator(BaseTranslator):
 
 
 class TextTranslator:
-    defaults_translator = "lin"
+    defaults_translator = "wat"
     default_from = ""
     default_to = "ru"
     translators: Dict[str, BaseTranslator]
@@ -203,7 +203,7 @@ class TextTranslator:
 
     def __init__(self):
         self.translators = {
-            # "wat": WatsonTranslator(),
+            "wat": WatsonTranslator(),
             # "yan": YandexTranslator(),
             "lin": LingvanexTranstator(),
         }
