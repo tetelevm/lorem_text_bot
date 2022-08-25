@@ -199,7 +199,7 @@ class LoremGenerator:
             for sentence in self._sentences_pattern.split(text)
         )
 
-        if text[-1] not in self.punctuation:
+        if text and text[-1] not in self.punctuation:
             if text[-1] == ",":
                 text = text[:-1]
             text += "."
@@ -248,9 +248,13 @@ class LoremGenerator:
 
         # as `self._sentences_pattern`, but without a space at the end
         sentences_end_pat = re.compile(fr"([{self.end_sentence}])")
-        is_sufficient = lambda text: len(sentences_end_pat.findall(text)) >= sentences_count
+
+        def is_sufficient(text: str) -> bool:
+            text = text.lstrip(self.end_sentence + " ")
+            return len(sentences_end_pat.findall(text)) >= sentences_count
 
         resulting_text = self.generate_raw_lorem(language, chars_len, is_sufficient)
+        resulting_text = resulting_text.lstrip(self.end_sentence + " ")
         split_text = sentences_end_pat.split(resulting_text)
         resulting_text = "".join(split_text[:sentences_count * 2])
 
