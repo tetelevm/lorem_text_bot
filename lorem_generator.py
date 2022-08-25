@@ -15,7 +15,7 @@ The algorithm is as follows:
 import re
 from random import randint
 from pathlib import Path
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Callable
 
 
 __all__ = [
@@ -60,10 +60,12 @@ class LoremGenerator:
     default_chars_len = 2
 
     punctuation = r".!?,"
+    end_sentence = punctuation.replace(",", "")
     lang_chars = {
         "ru": r"а-яё",
         "en": r"a-z",
         "el": r"α-ω",
+        "tt": r"а-яёҗңүһәө",
     }
 
     text_data: Dict[str, str]
@@ -74,10 +76,10 @@ class LoremGenerator:
         self.languages = list(self.text_data)
 
         self._multi_dot_pat = re.compile(fr"([{self.punctuation}])+")
+        self._multi_space_pat = re.compile(r"\s+")
         self._dot_word_pat = re.compile(fr"([{self.punctuation}])([^\s])")
         self._space_dot_pat = re.compile(fr"(\s)+([{self.punctuation}])")
-        punct_without_comma = self.punctuation.replace(",", "")
-        self._sentences_pattern = re.compile(fr"([{punct_without_comma}]\s)")
+        self._sentences_pattern = re.compile(fr"([{self.end_sentence}]\s)")
 
     def collect_data(self, data_directory: str) -> Dict[str, str]:
         """
@@ -134,13 +136,21 @@ class LoremGenerator:
         text = text.strip()
         return text
 
-    def generate_raw_lorem(self, language: str, words: int, chars_len: int) -> str:
+    def generate_raw_lorem(
+            self,
+            language: str,
+            chars_len: int,
+            is_need_to_stop_condition: Callable[[str], bool]
+    ) -> str:
         """
         Generates Lorem.
         To do this, it selects several characters into the buffer, and
         then searches for them in the text (in a random place), replaces
         the buffer with the characters next to them, and repeats again.
         The resulting text is the join of all the buffers used.
+
+        The last argument is the function that determines when the
+        generation stops.
         """
 
         text = self.text_data[language]
@@ -149,7 +159,7 @@ class LoremGenerator:
 
         resulting_text = ""
         buffer = ""
-        while resulting_text.count(" ") < words:
+        while not is_need_to_stop_condition(resulting_text):
             start_ind = randint(0, text_len)
             first_index = looped_text.find(buffer, start_ind, text_len)
             if first_index == -1:
@@ -166,6 +176,9 @@ class LoremGenerator:
         Processing raw lorem into correct humanoid text.
         """
 
+        # no spaces before punctuation marks
+        text = self._space_dot_pat.sub(r"\2", text)
+
         # only one punctuation mark consecutive
         text = self._multi_dot_pat.sub(r"\1", text)
 
@@ -177,8 +190,8 @@ class LoremGenerator:
         # spaces after punctuation marks
         text = self._dot_word_pat.sub(r"\1 \2", text)
 
-        # no spaces before punctuation marks
-        text = self._space_dot_pat.sub(r"\2", text)
+        # only one space is consecutive
+        text = self._multi_space_pat.sub(" ", text)
 
         # the first letter in the sentence should be capitalized
         text = "".join(
@@ -193,24 +206,56 @@ class LoremGenerator:
 
         return text
 
-    def generate_lorem(self, language=None, words=None, chars_len=None) -> str:
+    def generate_lorem(
+            self,
+            language: str = default_language,
+            words: int = default_word_count,
+            chars_len: int = default_chars_len
+    ) -> str:
         """
         The main method of the class, generates the Lorem and fixes it
         to the correct form.
         """
 
-        words = words or self.default_word_count
-        chars_len = chars_len or self.default_chars_len
-        language = language or self.default_language
         if language not in self.languages:
             raise ValueError(f"Unknown language {language}")
 
-        resulting_text = self.generate_raw_lorem(language, words, chars_len)
+        is_sufficient_text = lambda text: text.count(" ") >= words
+        resulting_text = self.generate_raw_lorem(language, chars_len, is_sufficient_text)
         resulting_text = self.postprocess_lorem(resulting_text)
         return resulting_text
 
-    def __call__(self, language=None, words=None, chars_len=None) -> str:
+    def __call__(
+            self,
+            language: str = default_language,
+            words: int = default_word_count,
+            chars_len: int = default_chars_len
+    ) -> str:
         return self.generate_lorem(language, words, chars_len)
+
+    def generate_sentences(
+            self,
+            language: str = default_language,
+            sentences_count: int = 1,
+            chars_len: int = default_chars_len
+    ) -> str:
+        """
+        Generates several Lorem sentences.
+        """
+
+        if language not in self.languages:
+            raise ValueError(f"Unknown language {language}")
+
+        # as `self._sentences_pattern`, but without a space at the end
+        sentences_end_pat = re.compile(fr"([{self.end_sentence}])")
+        is_sufficient = lambda text: len(sentences_end_pat.findall(text)) >= sentences_count
+
+        resulting_text = self.generate_raw_lorem(language, chars_len, is_sufficient)
+        split_text = sentences_end_pat.split(resulting_text)
+        resulting_text = "".join(split_text[:sentences_count * 2])
+
+        resulting_text = self.postprocess_lorem(resulting_text)
+        return resulting_text
 
 
 class ChineseGenerator:
@@ -253,5 +298,7 @@ chinese_generator = ChineseGenerator()
 
 if __name__ == "__main__":
     print(lorem_generator.generate_lorem())
+    print()
+    print(lorem_generator.generate_sentences(sentences_count=3))
     print()
     print(chinese_generator.get_chinese(48))
