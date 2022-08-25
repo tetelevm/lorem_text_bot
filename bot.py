@@ -1,3 +1,4 @@
+import asyncio
 from functools import wraps
 from typing import Callable
 
@@ -14,7 +15,7 @@ from telegram.ext import (
 
 from logger import logger, error_logger
 from messages import messages
-from async_runner import run_coro, AlreadyRunError, loop
+# from async_runner import run_coro, AlreadyRunError, loop
 from handlers import (
     HandlersType,
     received_message,
@@ -47,10 +48,11 @@ def handler(func: HandlersType):
     def wrapper(update: Update, context: CallbackContext):
         logger.info(f"   Req >>| {logger.flatten_string(update.message.text)}")
         try:
-            coro = run_coro(update.message.from_user.id, func(update, context))
-            loop.run_until_complete(coro)
-        except AlreadyRunError:
-            update.effective_chat.send_message(messages["already_run"])
+            # coro = run_coro(update.message.from_user.id, func(update, context))
+            # loop.run_until_complete(coro)
+            asyncio.run(func(update, context))
+        # except AlreadyRunError:
+        #     update.effective_chat.send_message(messages["already_run"])
         except Exception as exc:
             error_logger.error(error_logger.get_full_exc_info(exc))
             logger.error(logger.get_exc_info(exc))
@@ -117,3 +119,4 @@ def bot_main(token):
     updater.start_polling()
     logger("Bot has started")
     print("Bot has started")
+    updater.idle()
