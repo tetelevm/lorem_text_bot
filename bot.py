@@ -1,23 +1,15 @@
-import asyncio
-from functools import wraps
 from typing import Callable
 
 from telegram import Update
-from telegram.ext import CallbackContext
 from telegram.ext import (
-    Updater,
+    Application,
     CommandHandler,
-    Dispatcher,
     MessageHandler,
-    Filters,
-    BaseFilter,
 )
+from telegram.ext.filters import BaseFilter, ChatType, TEXT
 
-from logger import logger, error_logger
-from messages import messages
-# from async_runner import run_coro, AlreadyRunError, loop
+from logger import logger
 from handlers import (
-    HandlersType,
     received_message,
     command_start,
     command_help,
@@ -30,35 +22,8 @@ from handlers import (
 
 
 __all__ = [
-    "bot_main",
+    "bot_init",
 ]
-
-
-def handler(func: HandlersType):
-    """
-    Decorator for handlers. Logs requests and catches errors.
-    When crashes, it writes logs to a special file and outputs a
-    standard error message.
-
-    # TODO: asynchrony does not work as it should (that is, it does not
-        work at all :) )
-    """
-
-    @wraps(func)
-    def wrapper(update: Update, context: CallbackContext):
-        logger.info(f"   Req >>| {logger.flatten_string(update.message.text)}")
-        try:
-            # coro = run_coro(update.message.from_user.id, func(update, context))
-            # loop.run_until_complete(coro)
-            asyncio.run(func(update, context))
-        # except AlreadyRunError:
-        #     update.effective_chat.send_message(messages["already_run"])
-        except Exception as exc:
-            error_logger.error(error_logger.get_full_exc_info(exc))
-            logger.error(logger.get_exc_info(exc))
-            update.effective_chat.send_message(messages["error"])
-
-    return wrapper
 
 
 class NoChangeFilter(BaseFilter):
@@ -71,20 +36,19 @@ class NoChangeFilter(BaseFilter):
 no_change_filter = NoChangeFilter()
 
 
-standard_filter = no_change_filter & Filters.text
+standard_filter = no_change_filter & TEXT
 
 
-def add_all_handlers(dispatcher: Dispatcher):
+def add_all_handlers(bot: Application):
     """
     Adds all existing handlers to the bot.
     """
 
     def add_command(command: str, func: Callable, *args):
         """
-        Adds a function as a handler, additionally sets a filter on
-        changed messages.
+        Adds a function wrapped in logs and checks from Runner, and sets
+        an additional filter on changed messages.
         """
-        func = handler(func)
 
         args = list(args)
         if args:
@@ -92,9 +56,10 @@ def add_all_handlers(dispatcher: Dispatcher):
         else:
             args.append(standard_filter)
 
-        dispatcher.add_handler(CommandHandler(command, func, *args))
+        com_handler = CommandHandler(command, func, *args, block=False)
+        bot.add_handler(com_handler)
 
-    add_command("start", command_start, Filters.chat_type.private)
+    add_command("start", command_start, ChatType.PRIVATE)
     add_command("generate_absurd", command_generate_absurd)
     add_command("generate", command_generate)
     add_command("chinese", command_chinese)
@@ -102,21 +67,20 @@ def add_all_handlers(dispatcher: Dispatcher):
     add_command("translate", command_translate)
     add_command("help", command_help)
 
-    dispatcher.add_handler(MessageHandler(
-        Filters.chat_type.private & standard_filter,
-        handler(received_message)
+    bot.add_handler(MessageHandler(
+        ChatType.PRIVATE & standard_filter,
+        received_message,
+        block=False
     ))
 
 
-def bot_main(token):
+def bot_init(token):
     """
     The main function, creates a bot, sets its handlers and starts it.
     """
 
-    updater = Updater(token, use_context=True)
-    dispatcher = updater.dispatcher
-    add_all_handlers(dispatcher)
-    updater.start_polling()
+    bot = Application.builder().token(token).build()
+    add_all_handlers(bot)
     logger("Bot has started")
     print("Bot has started")
-    updater.idle()
+    bot.run_polling()
