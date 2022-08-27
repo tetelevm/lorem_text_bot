@@ -20,7 +20,7 @@ shared_languages: Final[tuple] = ("en", "ru", "el", "de", "ja", "fi")
 YANDEX_TOKEN: Final[str] = ""  # envs["YANDEX_TOKEN"]  # the translator is disabled, so no token
 LINGVANEX_TOKEN: Final[str] = envs["LINGVANEX_TOKEN"]
 
-TIMEOUT = 10
+TIMEOUT = 15
 
 
 class TranslationRequestException(Exception):

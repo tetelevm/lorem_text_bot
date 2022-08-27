@@ -1,4 +1,4 @@
-__version__ = "0.97"
+__version__ = "1.0.0"
 
 from envs import envs
 from bot import bot_init
