@@ -1,10 +1,13 @@
 import re
 import random
-from typing import List, Union, Tuple, Callable, Coroutine
+from functools import wraps
+from typing import Set, List, Union, Tuple, Callable, Coroutine
 
-from telegram import Update, ParseMode
+from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext
 
+from logger import logger, error_logger
 from messages import messages
 from lorem_generator import lorem_generator, chinese_generator
 from translator import (
@@ -16,7 +19,6 @@ from translator import (
 
 
 __all__ = [
-    "HandlersType",
     "received_message",
     "command_start",
     "command_help",
@@ -29,6 +31,70 @@ __all__ = [
 
 
 HandlersType = Callable[[Update, CallbackContext], Coroutine]
+
+
+class Handler:
+    """
+    A class for all handlers. Instance class must be used as a decorator
+    for handler functions.
+    """
+
+    running_tasks: Set[int]
+
+    class AlreadyRunError(Exception):
+        """
+        Error to prevent multiple tasks started by one user.
+        """
+        pass
+
+    def __init__(self):
+        self.running_tasks = set()
+
+    async def run_handler(self, user_key: int, coro: Coroutine):
+        """
+        Checks if there are tasks already running for this user, and if not,
+        sets the execution flag and executes the handler.
+        """
+
+        if user_key in self.running_tasks:
+            coro.close()
+            raise self.AlreadyRunError("The task has already started")
+
+        self.running_tasks.add(user_key)
+        try:
+            await coro
+        finally:
+            self.running_tasks.remove(user_key)
+
+    def __call__(self, func: HandlersType):
+        """
+        Decorator for handlers. Logs requests, makes checks and catches
+        errors. When crashes, it writes logs to a special file and
+        outputs a standard error message.
+        """
+
+        @wraps(func)
+        async def wrapper(update: Update, context: CallbackContext):
+            # logging the request
+            user_id = update.message.from_user.id
+            flat_msg = logger.flatten_string(update.message.text)
+            logger.info(f"   Req >>| {user_id} : {flat_msg}")
+
+            # run the handler
+            try:
+                handler_coro = func(update, context)
+                await self.run_handler(user_id, handler_coro)
+            except self.AlreadyRunError:
+                await update.effective_chat.send_message(messages["already_run"])
+            except Exception as exc:
+                error_logger.error(error_logger.get_full_exc_info(exc))
+                logger.error(logger.get_exc_info(exc))
+                await update.effective_chat.send_message(messages["error"])
+
+        return wrapper
+
+handler = Handler()
+
 
 
 repeated_spaces_pattern = re.compile(r"[\s]+")
@@ -64,6 +130,7 @@ async def translate(text: str, *params) -> Tuple[str, bool]:
 
 no_letter_pattern = re.compile(r"\W")
 
+@handler
 async def received_message(update: Update, context: CallbackContext):
     """
     Bot does not know how to work with messages, so just a stub.
@@ -76,19 +143,21 @@ async def received_message(update: Update, context: CallbackContext):
         message = messages["message"]["unknown"].format(command)
     else:
         message = messages["message"]["default"]
-    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
+    await update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
+@handler
 async def command_start(update: Update, context: CallbackContext):
     """
     Standard welcome.
     """
-    update.effective_chat.send_message(
+    await update.effective_chat.send_message(
         messages["start"],
         parse_mode=ParseMode.HTML
     )
 
 
+@handler
 async def command_help(update: Update, context: CallbackContext):
     """
     Displays either general help or help for a known command. Usage:
@@ -122,13 +191,14 @@ async def command_help(update: Update, context: CallbackContext):
     else:
         message = messages["help"]["unknown"].format(params[0])
 
-    update.effective_chat.send_message(
+    await update.effective_chat.send_message(
         message,
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True
     )
 
 
+@handler
 async def command_lorem(update: Update, context: CallbackContext):
     """
     Returns a lorem-like pseudo-text that looks like a real language.
@@ -201,9 +271,10 @@ async def command_lorem(update: Update, context: CallbackContext):
     else:
         message = lorem_generator.generate_lorem(*input_params)
 
-    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
+    await update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
+@handler
 async def command_translate(update: Update, context: CallbackContext):
     """
     A command to translate text from one language to another.
@@ -267,9 +338,10 @@ async def command_translate(update: Update, context: CallbackContext):
         else:
             text = update.message.reply_to_message.text
             message, _ = await translate(text, *params)
-    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
+    await update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
+@handler
 async def command_generate(update: Update, context: CallbackContext):
     """
     Generates a one sentence in Russian via lorem and then translates it
@@ -280,9 +352,10 @@ async def command_generate(update: Update, context: CallbackContext):
 
     text = lorem_generator.generate_sentences("ru", 1, chars_len=2)
     message, _ = await translate(text, "wat", "uk", "ru")
-    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
+    await update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
 
 
+@handler
 async def command_generate_absurd(update: Update, context: CallbackContext):
     """
     Generates a lorem with random parameters, then translates to other
@@ -319,9 +392,10 @@ async def command_generate_absurd(update: Update, context: CallbackContext):
             translator = random.choice(text_translator.translator_names)
             text, _ = await translate(text, translator, language, "ru")
 
-    update.effective_chat.send_message(text, parse_mode=ParseMode.HTML)
+    await update.effective_chat.send_message(text, parse_mode=ParseMode.HTML)
 
 
+@handler
 async def command_chinese(update: Update, context: CallbackContext):
     """
     Takes a random number of Chinese characters (in the range of 8-24)
@@ -334,4 +408,4 @@ async def command_chinese(update: Update, context: CallbackContext):
     count = random.randint(8, 24)
     ch_text = chinese_generator.get_chinese(count)
     message, _ = await translate(ch_text, "lin", "zh-Hans_CN", "ru")
-    update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
+    await update.effective_chat.send_message(message, parse_mode=ParseMode.HTML)
