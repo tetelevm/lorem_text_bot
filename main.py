@@ -1,13 +1,31 @@
-__version__ = "1.0.0"
+__version__ = "1.1.0"
+
+import asyncio
+from typing import List, Coroutine
 
 from envs import envs
-from bot import bot_init
+from bot import user_bot_init, admin_bot_init, test_bot_init
+
+
+async def start_bots(start_funcs: List[Coroutine]):
+    await asyncio.gather(*start_funcs)
+    while True:
+        await asyncio.sleep(1)
 
 
 if envs.get("DEBUG", False):
     # test bot for development
-    TOKEN = envs["TOKEN_TEST"]
+    TOKEN_TEST = envs["TOKEN_TEST"]
+    bot_list = [
+        test_bot_init(TOKEN_TEST),
+    ]
 else:
-    TOKEN = envs["TOKEN"]
+    TOKEN_USER = envs["TOKEN_USER"]
+    TOKEN_ADMIN = envs["TOKEN_ADMIN"]
+    bot_list = [
+        user_bot_init(TOKEN_USER),
+        admin_bot_init(TOKEN_ADMIN),
+    ]
 
-bot_init(TOKEN)
+
+asyncio.run(start_bots(bot_list))

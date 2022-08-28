@@ -20,7 +20,7 @@ shared_languages: Final[tuple] = ("en", "ru", "el", "de", "ja", "fi")
 YANDEX_TOKEN: Final[str] = ""  # envs["YANDEX_TOKEN"]  # the translator is disabled, so no token
 LINGVANEX_TOKEN: Final[str] = envs["LINGVANEX_TOKEN"]
 
-TIMEOUT = 15
+TIMEOUT = 10
 
 
 class TranslationRequestException(Exception):
@@ -195,7 +195,7 @@ class WatsonTranslator(BaseTranslator):
 
 
 class TextTranslator:
-    defaults_translator = "wat"
+    defaults_translator = "lin"
     default_from = ""
     default_to = "ru"
     translators: Dict[str, BaseTranslator]

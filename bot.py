@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Coroutine
 
 from telegram import Update
 from telegram.ext import (
@@ -10,19 +10,26 @@ from telegram.ext.filters import BaseFilter, ChatType, TEXT
 
 from logger import logger
 from handlers import (
+    HandlersType,
+    Handler,
     received_message,
-    command_start,
-    command_help,
+    command_start_user,
+    command_help_user,
+    command_generate,
+    command_chinese,
+    command_start_admin,
+    command_help_admin,
+    command_generate_wat,
+    command_generate_absurd,
     command_lorem,
     command_translate,
-    command_generate,
-    command_generate_absurd,
-    command_chinese,
 )
 
 
 __all__ = [
-    "bot_init",
+    "user_bot_init",
+    "admin_bot_init",
+    "test_bot_init",
 ]
 
 
@@ -39,48 +46,96 @@ no_change_filter = NoChangeFilter()
 standard_filter = no_change_filter & TEXT
 
 
-def add_all_handlers(bot: Application):
+def add_command(
+        bot: Application,
+        handler_decorator: Callable[[HandlersType], Coroutine],
+        command: str,
+        func: HandlersType,
+        filter_: BaseFilter = None,
+        as_command: bool = True
+):
     """
-    Adds all existing handlers to the bot.
+    Adds a function wrapped in logs and checks from Runner, and sets
+    an additional filter on changed messages.
     """
 
-    def add_command(command: str, func: Callable, *args):
-        """
-        Adds a function wrapped in logs and checks from Runner, and sets
-        an additional filter on changed messages.
-        """
+    handler_func = handler_decorator(func)
 
-        args = list(args)
-        if args:
-            args[0] &= standard_filter
-        else:
-            args.append(standard_filter)
+    if filter_:
+        filter_ &= standard_filter
+    else:
+        filter_ = standard_filter
 
-        com_handler = CommandHandler(command, func, *args, block=False)
-        bot.add_handler(com_handler)
+    if as_command:
+        handler_obj = CommandHandler(command, handler_func, filter_, block=False)
+    else:
+        handler_obj = MessageHandler(filter_, handler_func, block=False)
 
-    add_command("start", command_start, ChatType.PRIVATE)
-    add_command("generate_absurd", command_generate_absurd)
-    add_command("generate", command_generate)
-    add_command("chinese", command_chinese)
-    add_command("lorem", command_lorem)
-    add_command("translate", command_translate)
-    add_command("help", command_help)
-
-    bot.add_handler(MessageHandler(
-        ChatType.PRIVATE & standard_filter,
-        received_message,
-        block=False
-    ))
+    bot.add_handler(handler_obj)
 
 
-def bot_init(token):
+async def user_bot_init(token):
     """
     The main function, creates a bot, sets its handlers and starts it.
     """
 
     bot = Application.builder().token(token).build()
-    add_all_handlers(bot)
-    logger("Bot has started")
-    print("Bot has started")
-    bot.run_polling()
+
+    handler_decorator = Handler("user")
+    add_command(bot, handler_decorator, "start", command_start_user, ChatType.PRIVATE)
+    add_command(bot, handler_decorator, "generate", command_generate)
+    add_command(bot, handler_decorator, "chinese", command_chinese)
+    add_command(bot, handler_decorator, "help", command_help_user)
+    add_command(bot, handler_decorator, "_", received_message, ChatType.PRIVATE, as_command=False)
+
+    logger("User bot has started")
+    print("User bot has started")
+
+    # await bot.updater.start_polling(allowed_updates=[Update.MESSAGE, Update.POLL_ANSWER])
+    await bot.initialize()
+    await bot.updater.start_polling(allowed_updates=[Update.MESSAGE, Update.POLL_ANSWER])
+    await bot.start()
+
+
+async def admin_bot_init(token):
+    """
+    The main function, creates a bot, sets its handlers and starts it.
+    """
+
+    bot = Application.builder().token(token).build()
+
+    handler_decorator = Handler("admin")
+    add_command(bot, handler_decorator, "start", command_start_admin, ChatType.PRIVATE)
+    add_command(bot, handler_decorator, "generate", command_generate)
+    add_command(bot, handler_decorator, "chinese", command_chinese)
+    add_command(bot, handler_decorator, "generate_wat", command_generate_wat)
+    add_command(bot, handler_decorator, "generate_absurd", command_generate_absurd)
+    add_command(bot, handler_decorator, "lorem", command_lorem)
+    add_command(bot, handler_decorator, "translate", command_translate)
+    add_command(bot, handler_decorator, "help", command_help_admin)
+    add_command(bot, handler_decorator, "_", received_message, ChatType.PRIVATE, as_command=False)
+
+    logger("Admin bot has started")
+    print("Admin bot has started")
+
+    await bot.initialize()
+    await bot.updater.start_polling(allowed_updates=[Update.MESSAGE, Update.POLL_ANSWER])
+    await bot.start()
+
+
+async def test_bot_init(token):
+    """
+    The main function, creates a bot, sets its handlers and starts it.
+    """
+
+    bot = Application.builder().token(token).build()
+
+    handler_decorator = Handler("test")
+    add_command(bot, handler_decorator, "_", received_message, ChatType.PRIVATE, as_command=False)
+
+    logger("Test bot has started")
+    print("Test bot has started")
+
+    await bot.initialize()
+    await bot.updater.start_polling()
+    await bot.start()
