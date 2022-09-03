@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-no_letter_pattern = re.compile(r"\W")
+exclude_letter_pattern = re.compile(r"\W")
 
 async def received_message(update: Update, context: CallbackContext) -> str:
     """
@@ -37,7 +37,7 @@ async def received_message(update: Update, context: CallbackContext) -> str:
 
     text = update.message.text
     if text.startswith("/"):
-        command_end = no_letter_pattern.search(text[1:])
+        command_end = exclude_letter_pattern.search(text[1:])
         command_end = (command_end.start() + 1) if command_end else None
         command = text[:command_end]
         message = messages["message"]["unknown"].format(command)
@@ -272,7 +272,8 @@ async def command_lorem(update: Update, context: CallbackContext) -> str:
     if isinstance(input_params, str):
         message = input_params
     else:
-        message = lorem_generator.generate_lorem(*input_params)
+        lorem = lorem_generator.generate_lorem(*input_params)
+        message = lorem_generator.patterns["all_punctuation"].sub("", lorem).lower()
 
     return message
 

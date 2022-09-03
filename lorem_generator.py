@@ -74,12 +74,14 @@ class LoremGenerator:
     def __init__(self):
         self.text_data = self.collect_data(self.data_directory)
         self.languages = list(self.text_data)
-
-        self._multi_dot_pat = re.compile(fr"([{self.punctuation}])+")
-        self._multi_space_pat = re.compile(r"\s+")
-        self._dot_word_pat = re.compile(fr"([{self.punctuation}])([^\s])")
-        self._space_dot_pat = re.compile(fr"(\s)+([{self.punctuation}])")
-        self._sentences_pattern = re.compile(fr"([{self.end_sentence}]\s)")
+        self.patterns = {
+            "multi_dot": re.compile(fr"([{self.punctuation}])+"),
+            "multi_space": re.compile(r"\s+"),
+            "dot_word": re.compile(fr"([{self.punctuation}])([^\s])"),
+            "space_dot": re.compile(fr"(\s)+([{self.punctuation}])"),
+            "end_sentences": re.compile(fr"([{self.end_sentence}]\s)"),
+            "all_punctuation": re.compile(f"[{self.punctuation}]"),
+        }
 
     def collect_data(self, data_directory: str) -> Dict[str, str]:
         """
@@ -177,10 +179,10 @@ class LoremGenerator:
         """
 
         # no spaces before punctuation marks
-        text = self._space_dot_pat.sub(r"\2", text)
+        text = self.patterns["space_dot"].sub(r"\2", text)
 
         # only one punctuation mark consecutive
-        text = self._multi_dot_pat.sub(r"\1", text)
+        text = self.patterns["multi_dot"].sub(r"\1", text)
 
         # should no punctuation mark at the beginning of
         if text[0] in self.punctuation:
@@ -188,15 +190,15 @@ class LoremGenerator:
         text = text.strip()
 
         # spaces after punctuation marks
-        text = self._dot_word_pat.sub(r"\1 \2", text)
+        text = self.patterns["dot_word"].sub(r"\1 \2", text)
 
         # only one space is consecutive
-        text = self._multi_space_pat.sub(" ", text)
+        text = self.patterns["multi_space"].sub(" ", text)
 
         # the first letter in the sentence should be capitalized
         text = "".join(
             sentence.capitalize()
-            for sentence in self._sentences_pattern.split(text)
+            for sentence in self.patterns["end_sentences"].split(text)
         )
 
         if text and text[-1] not in self.punctuation:
