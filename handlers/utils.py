@@ -1,8 +1,10 @@
+from __future__ import annotations
 import re
 from functools import wraps
-from typing import List, Tuple, Callable, Coroutine
+from typing import List, Tuple, Dict, Set, Any, Callable, Coroutine
 
-from telegram import Update, Chat
+from telegram import Update, Chat, ReplyKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext
 
 from logger import logger, error_logger
@@ -15,6 +17,7 @@ from translator import (
 
 
 __all__ = [
+    "FuncType",
     "HandlersType",
     "Handler",
     "parse_args",
@@ -22,18 +25,39 @@ __all__ = [
 ]
 
 
-HandlersType = Callable[[Update, CallbackContext], Coroutine]
+FuncType = Coroutine[Any, Any, str]
+HandlersType = Callable[[Update, CallbackContext], FuncType]
 
 
 class Handler:
     """
     A class for all handlers. Instance class must be used as a decorator
     for handler functions.
+    The decorator must be created using the `get_decorator` method.
     """
 
+    name: str
+    running_tasks: Set[int]
+    buttons: ReplyKeyboardMarkup
+
+    _instances: Dict[str, Handler] = {}
+
     def __init__(self, name: str):
+        self.name = name
         self.running_tasks = set()
-        self.name = name.ljust(6)
+        self.buttons = ReplyKeyboardMarkup([])
+
+    @classmethod
+    def get_decorator(cls, name: str) -> Handler:
+        """
+        Creates a new decorator with a given name or returns an existing
+        one.
+        """
+
+        name = name.ljust(6)
+        if name not in cls._instances:
+            cls._instances[name] = cls(name)
+        return cls._instances[name]
 
     def log_request(self, user_id: int, text: str):
         """
@@ -43,7 +67,20 @@ class Handler:
         flat_msg = logger.flatten_string(text)
         logger.info(f"  {self.name} >>| {user_id} : {flat_msg}")
 
-    async def execute(self, coro: Coroutine, user_key: int, chat: Chat):
+    async def send_message(self, chat: Chat, message: str):
+        """
+        Sending a message to a user.
+        Not the best architectural solution, done because keyboard
+        buttons are stored in the handler object.
+        """
+        await chat.send_message(
+            message,
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True,
+            reply_markup=self.buttons
+        )
+
+    async def execute(self, coro: FuncType, user_key: int) -> str:
         """
         Checks if there are tasks already running for this user, and if
         not, sets the execution flag and executes the handler.
@@ -54,16 +91,15 @@ class Handler:
 
         if user_key in self.running_tasks:
             coro.close()
-            await chat.send_message(messages["already_run"])
-            return
+            return messages["already_run"]
 
         self.running_tasks.add(user_key)
         try:
-            await coro
+            return (await coro)
         except Exception as exc:
             error_logger.error(error_logger.get_full_exc_info(exc))
             logger.error(logger.get_exc_info(exc))
-            await chat.send_message(messages["error"])
+            return messages["error"]
         finally:
             self.running_tasks.remove(user_key)
 
@@ -79,7 +115,9 @@ class Handler:
             user_id = update.message.from_user.id
             self.log_request(user_id, update.message.text)
             coro = func(update, context)
-            await self.execute(coro, user_id, update.effective_chat)
+            message = await self.execute(coro, user_id)
+            if message:
+                await self.send_message(update.effective_chat, message)
 
         return wrapper
 
