@@ -3,6 +3,9 @@
 A bot project that generates absurd text based on learning artifacts from online
 translators.
 
+(!) The project is actively changing, so the description is out of date. As soon
+as the project is architecturally stable, the documentation will be updated.
+
 ### Basis
 
 The basic idea is that online translators are not perfect, so sometimes they
