@@ -81,7 +81,7 @@ async def user_bot_init(token):
 
     bot = Application.builder().token(token).build()
 
-    handler_decorator = Handler("user")
+    handler_decorator = Handler.get_decorator("user")
     add_command(bot, handler_decorator, "start", command_start_user, ChatType.PRIVATE)
     add_command(bot, handler_decorator, "generate", command_generate)
     add_command(bot, handler_decorator, "chinese", command_chinese)
@@ -104,7 +104,7 @@ async def admin_bot_init(token):
 
     bot = Application.builder().token(token).build()
 
-    handler_decorator = Handler("admin")
+    handler_decorator = Handler.get_decorator("admin")
     add_command(bot, handler_decorator, "start", command_start_admin, ChatType.PRIVATE)
     add_command(bot, handler_decorator, "generate", command_generate)
     add_command(bot, handler_decorator, "chinese", command_chinese)
@@ -130,7 +130,7 @@ async def test_bot_init(token):
 
     bot = Application.builder().token(token).build()
 
-    handler_decorator = Handler("test")
+    handler_decorator = Handler.get_decorator("test")
     add_command(bot, handler_decorator, "_", received_message, ChatType.PRIVATE, as_command=False)
 
     logger("Test bot has started")

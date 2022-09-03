@@ -1,6 +1,7 @@
+from __future__ import annotations
 import re
 from functools import wraps
-from typing import List, Tuple, Callable, Coroutine
+from typing import List, Tuple, Dict, Callable, Coroutine
 
 from telegram import Update, Chat
 from telegram.ext import CallbackContext
@@ -29,11 +30,26 @@ class Handler:
     """
     A class for all handlers. Instance class must be used as a decorator
     for handler functions.
+    The decorator must be created using the `get_decorator` method.
     """
+
+    _instances: Dict[str, Handler] = {}
 
     def __init__(self, name: str):
         self.running_tasks = set()
-        self.name = name.ljust(6)
+        self.name = name
+
+    @classmethod
+    def get_decorator(cls, name: str) -> Handler:
+        """
+        Creates a new decorator with a given name or returns an existing
+        one.
+        """
+
+        name = name.ljust(6)
+        if name not in cls._instances:
+            cls._instances[name] = cls(name)
+        return cls._instances[name]
 
     def log_request(self, user_id: int, text: str):
         """
