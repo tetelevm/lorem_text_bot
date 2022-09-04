@@ -156,13 +156,17 @@ async def command_generate_wat(update: Update, context: CallbackContext) -> str:
     """
     Generates a one sentence in Russian via lorem and then translates it
     using IBM Watson as Ukrainian.
+    Because in Watson the Russian language is blocked (quite possibly
+    due to this bot :) ), it is translated as wat:uk-en + lin:en-ru.
     Usage (in admin version):
     /generate_wat
     """
 
     text = lorem_generator.generate_sentences("ru", 1, chars_len=2)
-    message, _ = await translate(text, "wat", "uk", "ru")
-    return message
+    text, succ = await translate(text, "wat", "uk", "en")
+    if succ:
+        text, _ = await translate(text, "lin", "en", "ru")
+    return text
 
 
 async def command_generate_absurd(update: Update, context: CallbackContext) -> str:

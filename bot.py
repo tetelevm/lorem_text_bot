@@ -167,6 +167,7 @@ async def test_bot_init(token):
         Command("start", command_start_admin, filters=ChatType.PRIVATE),
         Command("generate", command_generate, "сгенерировать фразу 🅰️", to_button=True),
         Command("chinese", command_chinese, "перевод китайских символов 🈲", to_button=True),
+        Command("generate_wat", command_generate_wat, "сгенерировать фразу Waston 🇼️️", to_button=True),
         Command("lorem", command_lorem, "сгенерировать псевдотекст 📃"),
     ]
     await bot_init(token, "test", commands)
