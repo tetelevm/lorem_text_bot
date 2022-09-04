@@ -27,6 +27,22 @@ __all__ = [
 # === for preprocessing ===============================================
 # Functions for text preprocessing, not used in the application
 
+def get_all_chars(path):
+    print(repr("".join(sorted(set(open(path).read())))))
+
+def clear_text(path, to=None):
+    import re
+    with open(path, "r") as file:
+        text = file.read()
+    text = re.sub(r"[\s]+", " ", text)
+    text = re.sub(r"(\s)+([.!?,])", r"\2", text)
+    text = re.sub(r"([.!?,])+", r"\1", text)
+    text = re.sub(r"([.!?,])([^\s])", r"\1 \2", text)
+    text = re.sub(r"\s+", " ", text)
+    to = to or path
+    with open(to, "w") as file:
+        file.write(text)
+
 def reduce_lines(path, to=None):
     import re
     with open(path, "r") as file:
@@ -66,6 +82,7 @@ class LoremGenerator:
         "en": r"a-z",
         "el": r"α-ω",
         "tt": r"а-яёҗңүһәө",
+        "nl": r"a-z",
     }
 
     text_data: Dict[str, str]
