@@ -103,13 +103,15 @@ async def bot_init(token: str, log_name: str, commands: List[Command]):
     await app.bot.set_my_commands(bot_commands)
     await app.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
 
-    # creating buttons under the input field
-    # not implemented splitting into rows, so a maximum of 4 buttons is expected
+    # creating buttons under the input field; 0-6 buttons is expected
     buttons = [[
         "/" + command.name
         for command in commands
         if command.to_button
     ]]
+    if len(buttons[0]) > 3:
+        count_top = 2 if len(buttons[0]) == 4 else 3
+        buttons = [buttons[0][:count_top], buttons[0][count_top:]]
     handler.buttons = (
         ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=False)
         if buttons[0] else
@@ -150,7 +152,7 @@ async def admin_bot_init(token):
         Command("chinese", command_chinese, "перевод китайских символов 🈲", to_button=True),
         Command("generate_wat", command_generate_wat, "сгенерировать фразу Waston 🇼️️", to_button=True),
         Command("generate_absurd", command_generate_absurd, "сгенерировать абсурдоткекст 🔤"),
-        Command("lorem", command_lorem, "сгенерировать псевдотекст 📃"),
+        Command("lorem", command_lorem, "сгенерировать псевдотекст 📃", to_button=True),
         Command("translate", command_translate, "перевод по сообщения 🔄"),
         Command("help", command_help_admin, "справка 🧐"),
     ]

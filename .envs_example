@@ -1,3 +1,11 @@
+"DEBUG": True
+
+"TOKEN_USER": "you:token_from_user"
+"TOKEN_ADMIN": "you:token_from_admin"
+"TOKEN_TEST": "you:token_from_test"
+
 "TOKEN": "you:token"
-"DEBUG": False
+
+"CHANNEL_NAME": "@you_channel_name"
+
 "LINGVANEX_TOKEN": "lingvanex_token"
