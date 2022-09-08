@@ -3,14 +3,13 @@ import random
 from typing import List, Union
 
 from telegram import Update
-from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
 from messages import messages
 from lorem_generator import lorem_generator, chinese_generator
 from translator import text_translator, shared_languages
 
-from .utils import parse_args, translate
+from .utils import parse_args, translate, channel_utils
 
 
 __all__ = [
@@ -21,6 +20,7 @@ __all__ = [
     "command_help_admin",
     "command_generate",
     "command_chinese",
+    "command_random",
     "command_generate_wat",
     "command_generate_absurd",
     "command_lorem",
@@ -29,6 +29,7 @@ __all__ = [
 
 
 exclude_letter_pattern = re.compile(r"\W")
+
 
 async def received_message(update: Update, context: CallbackContext) -> str:
     """
@@ -77,6 +78,8 @@ async def command_help_user(update: Update, context: CallbackContext) -> str:
         message = messages["help"]["generate"]
     elif params[0] == "/chinese":
         message = messages["help"]["chinese"]
+    elif params[0] == "/random":
+        message = messages["help"]["random"]
     elif params[0] == "/help":
         message = messages["help"]["help"]
     else:
@@ -151,6 +154,16 @@ async def command_chinese(update: Update, context: CallbackContext) -> str:
     ch_text = chinese_generator.get_chinese(count)
     message, _ = await translate(ch_text, "lin", "zh-Hans_CN", "ru")
     return message
+
+
+async def command_random(update: Update, context: CallbackContext):
+    """
+    Forwards a random message from the channel to the user who requested
+    it.
+    Usage:
+    /random
+    """
+    return await channel_utils.reply_random_post(update.effective_chat)
 
 
 async def command_generate_wat(update: Update, context: CallbackContext) -> str:

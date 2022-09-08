@@ -55,7 +55,9 @@ class Handler:
         """
 
         flat_msg = logger.flatten_string(text)
-        logger.info(f"  {self.name} >>| {user_id} : {flat_msg}")
+        msg = f"  {self.name} >>| {user_id} : {flat_msg}"
+        print(msg)
+        logger.info(msg)
 
     async def send_message(self, chat: Chat, message: str):
         """

@@ -1,10 +1,10 @@
+"GITHUB_LINK": "https://github.com/tetelevm/lorem_text_bot"
+
 "DEBUG": True
 
 "TOKEN_USER": "you:token_from_user"
 "TOKEN_ADMIN": "you:token_from_admin"
 "TOKEN_TEST": "you:token_from_test"
-
-"TOKEN": "you:token"
 
 "CHANNEL_NAME": "@you_channel_name"
 

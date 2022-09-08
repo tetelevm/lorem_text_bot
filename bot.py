@@ -31,6 +31,7 @@ from handlers import (
     command_generate_absurd,
     command_lorem,
     command_translate,
+    command_random,
 )
 
 
@@ -137,6 +138,7 @@ async def user_bot_init(token):
         Command("start", command_start_user, filters=ChatType.PRIVATE),
         Command("generate", command_generate, "сгенерировать фразу 🅰️", to_button=True),
         Command("chinese", command_chinese, "перевод китайских символов 🈲", to_button=True),
+        Command("random", command_random, "случайный пост из канала 📓", to_button=True),
         Command("help", command_help_user, "справка 🧐"),
     ]
     await bot_init(token, "user", commands)
@@ -168,6 +170,8 @@ async def test_bot_init(token):
         Command("generate", command_generate, "сгенерировать фразу 🅰️", to_button=True),
         Command("chinese", command_chinese, "перевод китайских символов 🈲", to_button=True),
         Command("generate_wat", command_generate_wat, "сгенерировать фразу Waston 🇼️️", to_button=True),
+        Command("random", command_random, "случайный пост из канала 📓", to_button=True),
         Command("lorem", command_lorem, "сгенерировать псевдотекст 📃"),
+        Command("help", command_help_admin, "справка 🧐"),
     ]
     await bot_init(token, "test", commands)

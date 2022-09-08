@@ -1,5 +1,7 @@
 from typing import TypedDict
 
+from envs import envs
+
 
 __all__ = [
     "messages",
@@ -28,11 +30,15 @@ _Translate = TypedDict("_Translate", {
     "timeout_error": str,
     "request_error": str,
 })
+_Random = TypedDict("_Random", {
+    "error": str
+})
 _Help = TypedDict("_Help", {
     "user": str,
     "admin": str,
     "generate": str,
     "chinese": str,
+    "random": str,
     "generate_wat": str,
     "generate_absurd": str,
     "lorem": str,
@@ -41,21 +47,17 @@ _Help = TypedDict("_Help", {
     "unknown": str,
 })
 
-_Messages = TypedDict(
-    "_Messages",
-    {
-        "already_run": str,
-        "error": str,
-        "todo": str,
-        "message": _Message,
-        "start": _Start,
-        "lorem": _Lorem,
-        "translate": _Translate,
-        "help": _Help,
-    }
-)
-
-_github_link = "https://github.com/tetelevm/lorem_text_bot"
+_Messages = TypedDict("_Messages", {
+    "already_run": str,
+    "error": str,
+    "todo": str,
+    "message": _Message,
+    "start": _Start,
+    "lorem": _Lorem,
+    "translate": _Translate,
+    "random": _Random,
+    "help": _Help,
+})
 
 
 messages: _Messages = {
@@ -80,6 +82,7 @@ messages: _Messages = {
             "\n"
             "🅰️ /generate - сгенерировать <b>фразу</b>\n"
             "🈲️ /chinese - перевести случайные <b>китайские символы</b>\n"
+            "📓 /random - переслать случайный <b>пост из канала</b>\n"
             "🧐 /help - <b>справка</b> (более подробное описание)"
         ),
         "admin": (
@@ -119,7 +122,14 @@ messages: _Messages = {
         ),
         "request_error": (
             "🐞 Ошибка при запросе. Возможно, неизвестный переводчику язык, сервер прилёг поспать"
-            "или какая-то другая непонятная причина."
+            " или какая-то другая непонятная причина."
+        ),
+    },
+
+    "random": {
+        "error": (
+            "🐞 Произошла какая-то ошибка. Вероятно, это случайность (но если такое повторится"
+            " несколько раз, то какой-то баг и скоро починим)."
         ),
     },
 
@@ -132,13 +142,16 @@ messages: _Messages = {
             "\n"
             "🈲 /chinese - беру случайное количество <b>китайских символов</b> и перевожу их\n"
             "\n"
+            f"📓 /random - пересылаю случайный пост из канала {envs['CHANNEL_NAME']}\n"
+            "\n"
             "🧐 /help - выводит это сообщение\n"
             "\n"
             "🤓 Более подробное описание:\n"
             "<code>/help /generate</code>\n"
             "<code>/help /chinese</code>\n"
+            "<code>/help /random</code>\n"
             "\n"
-            + f"Исходники &lt;<a href=\"{_github_link}\">тут</a>&gt; 🐙."
+            f"Исходники &lt;<a href=\"{envs['GITHUB_LINK']}\">тут</a>&gt; 🐙"
         ),
 
         "admin": (
@@ -172,8 +185,8 @@ messages: _Messages = {
             "<code>/help /lorem</code>\n"
             "<code>/help /translate</code>\n"
             "\n"
-            + f"Исходники &lt;<a href=\"{_github_link}\">лежат тут</a>&gt; 🐙. Там же можно спросить"
-            " вопросов."
+            f"Исходники &lt;<a href=\"{envs['GITHUB_LINK']}\">лежат тут</a>&gt; 🐙. Там же можно"
+            " спросить вопросов."
         ),
 
         "generate": (
@@ -195,6 +208,15 @@ messages: _Messages = {
             "\n"
             "📗 Примеры:\n"
             "- &lt;<code>/chinese</code>&gt; - переводит китайские символы"
+        ),
+
+        "random": (
+            f"📓 /random пересылает случайный пост из канала {envs['CHANNEL_NAME']} сюда\n"
+            "\n"
+            "🧠 Пересылает пост, что тут ещё сказать?\n"
+            "\n"
+            "📗 Примеры:\n"
+            "- &lt;<code>/random</code>&gt; - пересылает случайный пост"
         ),
 
         "generate_wat": (
