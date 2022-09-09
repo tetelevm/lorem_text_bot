@@ -56,7 +56,7 @@ class ChannelUtils:
     """
 
     channel_name = envs["CHANNEL_NAME"]
-    last_index = 4000  # temporary solution
+    last_index = 10  # temporary solution
 
     async def reply_random_post(self, chat: Chat) -> str:
         """
