@@ -83,6 +83,7 @@ class LoremGenerator:
         "el": r"α-ω",
         "tt": r"а-яёҗңүһәө",
         "nl": r"a-z",
+        "hy": "ա-և",
     }
 
     text_data: Dict[str, str]
