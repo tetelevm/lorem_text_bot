@@ -1,11 +1,12 @@
 "GITHUB_LINK": "https://github.com/tetelevm/lorem_text_bot"
 
-"DEBUG": True
+"DEBUG": True  # if True, then only the test bot starts
 
 "TOKEN_USER": "you:token_from_user"
 "TOKEN_ADMIN": "you:token_from_admin"
 "TOKEN_TEST": "you:token_from_test"
 
-"CHANNEL_NAME": "@you_channel_name"
+"CHANNEL_NAME": "@you_channel_name"  # the name of the channel from which the posts are forwarded
+"LAST_INDEX": 100  # id of the last post in the channel (used until the first new post)
 
 "LINGVANEX_TOKEN": "lingvanex_token"

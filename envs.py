@@ -11,7 +11,8 @@ def parse_envs() -> dict:
     """
     Parses the secret variables specified in the gitigrored `.envs` file.
     Variables must be specified on separate in the format `"name": value`,
-    the value must be a plain python type.
+    the value must be a plain python type. The comment after the hashtag
+    character can also be after the value.
     An example is in the `.envs_example` file.
     """
 
@@ -19,11 +20,13 @@ def parse_envs() -> dict:
     envs_file = current_path / ".envs"
     try:
         with open(envs_file, "r") as file:
-            envs_str = [line.replace("\n", "") for line in file.readlines()]
+            text = file.readlines()
     except FileNotFoundError:
         raise ValueError("Requires the settings file `.envs` in the root of the project")
 
-    envs_dict = "{" + ",".join(filter(None, envs_str)) + "}"
+    # breaks if hashtag somewhere in the string value
+    clean_text = [line[:line.find("#")] for line in text]
+    envs_dict = "{" + ",".join(filter(bool, clean_text)) + "}"
     return literal_eval(envs_dict)
 
 
