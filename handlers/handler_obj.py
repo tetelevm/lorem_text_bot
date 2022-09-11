@@ -12,14 +12,14 @@ from messages import messages
 __all__ = [
     "FuncType",
     "HandlersType",
-    "Handler",
+    "HandlerDecorator",
 ]
 
 FuncType = Coroutine[Any, Any, str]
 HandlersType = Callable[[Update, CallbackContext], FuncType]
 
 
-class Handler:
+class HandlerDecorator:
     """
     A class for all handlers. Instance class must be used as a decorator
     for handler functions.
@@ -30,7 +30,7 @@ class Handler:
     running_tasks: Set[int]
     buttons: ReplyKeyboardMarkup
 
-    _instances: Dict[str, Handler] = {}
+    _instances: Dict[str, HandlerDecorator] = {}
 
     def __init__(self, name: str):
         self.name = name
@@ -38,7 +38,7 @@ class Handler:
         self.buttons = ReplyKeyboardMarkup([])
 
     @classmethod
-    def get_decorator(cls, name: str) -> Handler:
+    def get_decorator(cls, name: str) -> HandlerDecorator:
         """
         Creates a new decorator with a given name or returns an existing
         one.
