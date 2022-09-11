@@ -7,7 +7,7 @@ from telegram.error import BadRequest
 
 from envs import envs
 from messages import messages
-from logger import error_logger
+from logger import logger, error_logger
 from translator import (
     text_translator,
     TranslationTimeoutException,
@@ -88,6 +88,8 @@ class ChannelUtils:
         when it is started, we need a special handler that just updates
         the id when a new post is released.
         """
+
         self.last_index = new_id
+        logger.info(f"updated channel.updated (> {new_id})")
 
 channel_utils = ChannelUtils()
