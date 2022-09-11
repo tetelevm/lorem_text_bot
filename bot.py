@@ -26,13 +26,14 @@ from handlers import (
     command_help_user,
     command_generate,
     command_chinese,
+    command_random,
+    new_channel_post,
     command_start_admin,
     command_help_admin,
     command_generate_wat,
     command_generate_absurd,
     command_lorem,
     command_translate,
-    command_random,
 )
 
 
@@ -55,6 +56,7 @@ class Handler(ABC):
     command_type: Type[BaseHandler] = BaseHandler
     description: Optional[str] = ""
     to_button: Optional[bool] = False
+    _with_decorator: bool = True
 
     @abstractmethod
     def get_args(self, decorator: HandlerDecorator) -> tuple:
@@ -69,7 +71,8 @@ class Command(Handler):
     command_type: Type[BaseHandler] = CommandHandler
 
     def get_args(self, decorator: HandlerDecorator) -> tuple:
-        return (self.name, decorator(self.func), self.filters, False)
+        func = decorator(self.func) if self._with_decorator else self.func
+        return (self.name, func, self.filters, False)
 
 
 @dataclass
@@ -77,7 +80,8 @@ class Message(Handler):
     command_type: Type[BaseHandler] = MessageHandler
 
     def get_args(self, decorator: HandlerDecorator) -> tuple:
-        return (self.filters, decorator(self.func), False)
+        func = decorator(self.func) if self._with_decorator else self.func
+        return (self.filters, func, False)
 
 
 # =============================================================================
@@ -144,7 +148,8 @@ async def user_bot_init(token):
         Command(command_chinese, "chinese", TEXT, description="перевод китайских символов 🈲", to_button=True),
         Command(command_random, "random", TEXT, description="случайный пост из канала 📓", to_button=True),
         Command(command_help_user, "help", TEXT, description="справка 🧐"),
-        Message(received_message, filters=TEXT & ChatType.PRIVATE)
+        Message(received_message, filters=TEXT & ChatType.PRIVATE),
+        Message(new_channel_post, filters=TEXT & ChatType.CHANNEL, _with_decorator=False),
     ]
     await bot_init(token, "user", commands)
 
@@ -162,7 +167,7 @@ async def admin_bot_init(token):
         Command(command_lorem, "lorem", TEXT, description="сгенерировать псевдотекст 📃", to_button=True),
         Command(command_translate, "translate", TEXT, description="перевод по сообщения 🔄"),
         Command(command_help_admin, "help", TEXT, description="справка 🧐"),
-        Message(received_message, filters=TEXT & ChatType.PRIVATE)
+        Message(received_message, filters=TEXT & ChatType.PRIVATE),
     ]
     await bot_init(token, "admin", commands)
 
@@ -180,5 +185,6 @@ async def test_bot_init(token):
         Command(command_lorem, "lorem", TEXT, description="сгенерировать псевдотекст 📃"),
         Command(command_help_admin, "help", TEXT, description="справка 🧐"),
         Message(received_message, filters=TEXT & ChatType.PRIVATE),
+        Message(new_channel_post, filters=TEXT & ChatType.CHANNEL, _with_decorator=False),
     ]
     await bot_init(token, "test", commands)

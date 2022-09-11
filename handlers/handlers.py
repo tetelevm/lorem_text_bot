@@ -21,6 +21,7 @@ __all__ = [
     "command_generate",
     "command_chinese",
     "command_random",
+    "new_channel_post",
     "command_generate_wat",
     "command_generate_absurd",
     "command_lorem",
@@ -164,6 +165,15 @@ async def command_random(update: Update, context: CallbackContext):
     /random
     """
     return await channel_utils.reply_random_post(update.effective_chat)
+
+
+async def new_channel_post(update: Update, context: CallbackContext):
+    """
+    Handler for posts from the channel.
+    Updates the last channel post id to pick random posts more
+    correctly.
+    """
+    channel_utils.set_last_id(update.channel_post.message_id)
 
 
 async def command_generate_wat(update: Update, context: CallbackContext) -> str:

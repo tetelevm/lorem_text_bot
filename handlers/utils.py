@@ -82,4 +82,12 @@ class ChannelUtils:
         error_logger.error(ConnectionError("The post is not given out"))
         return messages["random"]["error"]
 
+    def set_last_id(self, new_id: int):
+        """
+        Since the bot cannot know the id of the last post in the channel
+        when it is started, we need a special handler that just updates
+        the id when a new post is released.
+        """
+        self.last_index = new_id
+
 channel_utils = ChannelUtils()

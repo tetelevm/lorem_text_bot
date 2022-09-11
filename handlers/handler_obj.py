@@ -112,4 +112,3 @@ class HandlerDecorator:
                 await self.send_message(update.effective_chat, message)
 
         return wrapper
-
