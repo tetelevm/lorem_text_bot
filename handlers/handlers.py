@@ -198,7 +198,7 @@ async def command_generate_wat(update: Update, context: CallbackContext) -> str:
     word_count = random.randint(10, 18)
     text = lorem_generator("ru", word_count, chars_len=2)
     text = lorem_generator.clear_text(text)
-    text, succ = await translate(text, "wat", "uk", "ru")
+    text, succ = await translate(text, "wat", "uk", "en")
     if succ:
         text, _ = await translate(text, "lin", "en", "ru")
     return text
