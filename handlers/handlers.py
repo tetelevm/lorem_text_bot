@@ -13,6 +13,7 @@ from .utils import parse_args, translate, channel_utils
 
 
 __all__ = [
+    "echo",
     "received_message",
     "command_start_user",
     "command_start_admin",
@@ -27,6 +28,14 @@ __all__ = [
     "command_lorem",
     "command_translate",
 ]
+
+
+async def echo(update: Update, context: CallbackContext) -> str:
+    """
+    Just an echo function to test the commands.
+    """
+    print("there!")
+    return update.message.text
 
 
 exclude_letter_pattern = re.compile(r"\W")
@@ -180,17 +189,17 @@ async def command_generate_wat(update: Update, context: CallbackContext) -> str:
     """
     Generates a small phrase in Russian via lorem and then translates it
     using IBM Watson as Ukrainian.
-    Because in Watson the Russian language is blocked (quite possibly
-    due to this bot :) ), it is translated as wat:uk-en + lin:en-ru.
+    # Because in Watson the Russian language is blocked (quite possibly
+    # due to this bot :) ), it is translated as wat:uk-en + lin:en-ru.
     Usage (in admin version):
     /generate_wat
     """
 
     word_count = random.randint(5, 16)
     text = lorem_generator("ru", word_count, chars_len=2)
-    text, succ = await translate(text, "wat", "uk", "en")
-    if succ:
-        text, _ = await translate(text, "lin", "en", "ru")
+    text, succ = await translate(text, "wat", "uk", "ru")
+    # if succ:
+    #     text, _ = await translate(text, "lin", "en", "ru")
     return text
 
 
