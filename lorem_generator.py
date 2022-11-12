@@ -282,6 +282,13 @@ class LoremGenerator:
         resulting_text = self.postprocess_lorem(resulting_text)
         return resulting_text
 
+    def clear_text(self, text: str) -> str:
+        """
+        Clears the text of punctuation marks and converts it to lower
+        case.
+        """
+        return self.patterns["all_punctuation"].sub("", text).lower()
+
 
 class ChineseGenerator:
     """

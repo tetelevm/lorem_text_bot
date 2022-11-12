@@ -189,17 +189,18 @@ async def command_generate_wat(update: Update, context: CallbackContext) -> str:
     """
     Generates a small phrase in Russian via lorem and then translates it
     using IBM Watson as Ukrainian.
-    # Because in Watson the Russian language is blocked (quite possibly
-    # due to this bot :) ), it is translated as wat:uk-en + lin:en-ru.
+    Generation is done by the algorithm [wat:uk-en + lin:en-ru] because
+    it has better results. Also, all punctuation marks are ignored.
     Usage (in admin version):
     /generate_wat
     """
 
-    word_count = random.randint(5, 16)
+    word_count = random.randint(10, 18)
     text = lorem_generator("ru", word_count, chars_len=2)
+    text = lorem_generator.clear_text(text)
     text, succ = await translate(text, "wat", "uk", "ru")
-    # if succ:
-    #     text, _ = await translate(text, "lin", "en", "ru")
+    if succ:
+        text, _ = await translate(text, "lin", "en", "ru")
     return text
 
 
@@ -308,10 +309,11 @@ async def command_lorem(update: Update, context: CallbackContext) -> str:
     args = parse_args(input_text)
     input_params = get_params(*args)
     if isinstance(input_params, str):
+        # incorrect parameters
         message = input_params
     else:
         lorem = lorem_generator.generate_lorem(*input_params)
-        message = lorem_generator.patterns["all_punctuation"].sub("", lorem).lower()
+        message = lorem_generator.clear_text(lorem)
 
     return message
 
