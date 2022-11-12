@@ -15,12 +15,14 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
 )
-from telegram.ext.filters import BaseFilter, ChatType, TEXT
+from telegram.ext.filters import BaseFilter, ChatType, Text, TEXT
 
 from logger import logger
 from handlers import (
     HandlersType,
     HandlerDecorator,
+
+    # echo,
     received_message,
     command_start_user,
     command_help_user,
@@ -34,6 +36,7 @@ from handlers import (
     command_generate_absurd,
     command_lorem,
     command_translate,
+    repeat_command,
 )
 
 
@@ -71,8 +74,7 @@ class Command(Handler):
     command_type: Type[BaseHandler] = CommandHandler
 
     def get_args(self, decorator: HandlerDecorator) -> tuple:
-        func = decorator(self.func) if self._with_decorator else self.func
-        return (self.name, func, self.filters, False)
+        return (self.name, decorator(self.func), self.filters, False)
 
 
 @dataclass
@@ -97,7 +99,7 @@ async def bot_init(token: str, log_name: str, handlers: List[Handler]):
     app = Application.builder().token(token).build()
 
     # add all commands
-    handler_decorator = HandlerDecorator.get_decorator(log_name)
+    handler_decorator = HandlerDecorator.get_decorator(log_name, app)
     for handler in handlers:
         handler_obj = handler.command_type(*handler.get_args(handler_decorator))
         app.add_handler(handler_obj)
@@ -167,6 +169,7 @@ async def admin_bot_init(token):
         Command(command_lorem, "lorem", TEXT, description="сгенерировать псевдотекст 📃", to_button=True),
         Command(command_translate, "translate", TEXT, description="перевод по сообщения 🔄"),
         Command(command_help_admin, "help", TEXT, description="справка 🧐"),
+        Message(repeat_command, filters=Text(["+"])),
         Message(received_message, filters=TEXT & ChatType.PRIVATE),
     ]
     await bot_init(token, "admin", commands)
@@ -184,6 +187,7 @@ async def test_bot_init(token):
         Command(command_random, "random", TEXT, description="случайный пост из канала 📓", to_button=True),
         Command(command_lorem, "lorem", TEXT, description="сгенерировать псевдотекст 📃"),
         Command(command_help_admin, "help", TEXT, description="справка 🧐"),
+        Message(repeat_command, filters=Text(["+"])),
         Message(received_message, filters=TEXT & ChatType.PRIVATE),
         Message(new_channel_post, filters=TEXT & ChatType.CHANNEL, _with_decorator=False),
     ]

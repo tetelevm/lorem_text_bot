@@ -1,10 +1,10 @@
 from __future__ import annotations
 from functools import wraps
-from typing import Dict, Set, Any, Callable, Coroutine
+from typing import Dict, Set, Any, Callable, Coroutine, Union
 
 from telegram import Update, Chat, ReplyKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import CallbackContext
+from telegram.ext import Application, CallbackContext
 
 from logger import logger, error_logger
 from messages import messages
@@ -15,7 +15,8 @@ __all__ = [
     "HandlerDecorator",
 ]
 
-FuncType = Coroutine[Any, Any, str]
+ReturnType = Union[str, None, Update]
+FuncType = Coroutine[Any, Any, ReturnType]
 HandlersType = Callable[[Update, CallbackContext], FuncType]
 
 
@@ -27,18 +28,20 @@ class HandlerDecorator:
     """
 
     name: str
+    app: Application
     running_tasks: Set[int]
     buttons: ReplyKeyboardMarkup
 
     _instances: Dict[str, HandlerDecorator] = {}
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, app: Application):
         self.name = name
+        self.app = app
         self.running_tasks = set()
         self.buttons = ReplyKeyboardMarkup([])
 
     @classmethod
-    def get_decorator(cls, name: str) -> HandlerDecorator:
+    def get_decorator(cls, name: str, app: Application) -> HandlerDecorator:
         """
         Creates a new decorator with a given name or returns an existing
         one.
@@ -46,7 +49,7 @@ class HandlerDecorator:
 
         name = name.ljust(6)
         if name not in cls._instances:
-            cls._instances[name] = cls(name)
+            cls._instances[name] = cls(name, app)
         return cls._instances[name]
 
     def log_request(self, user_id: int, text: str):
@@ -72,7 +75,7 @@ class HandlerDecorator:
             reply_markup=self.buttons
         )
 
-    async def execute(self, coro: FuncType, user_key: int) -> str:
+    async def execute(self, coro: FuncType, user_key: int) -> ReturnType:
         """
         Checks if there are tasks already running for this user, and if
         not, sets the execution flag and executes the handler.
@@ -100,6 +103,9 @@ class HandlerDecorator:
         Decorator for handlers. Logs requests, makes checks and catches
         errors. When crashes, it writes logs to a special file and
         outputs a standard error message.
+        The Update function can return a string (then the string is
+        displayed to the user) or an Update object (then it will be
+        recalled with a new Update). Or it may return nothing.
         """
 
         @wraps(func)
@@ -107,8 +113,12 @@ class HandlerDecorator:
             user_id = update.message.from_user.id
             self.log_request(user_id, update.message.text)
             coro = func(update, context)
-            message = await self.execute(coro, user_id)
-            if message:
-                await self.send_message(update.effective_chat, message)
+            result = await self.execute(coro, user_id)
+            if result:
+                if isinstance(result, str):
+                    await self.send_message(update.effective_chat, result)
+                elif isinstance(result, Update):
+                    # Recall the update process with a new Update
+                    await self.app.process_update(result)
 
         return wrapper

@@ -27,6 +27,7 @@ __all__ = [
     "command_generate_absurd",
     "command_lorem",
     "command_translate",
+    "repeat_command",
 ]
 
 
@@ -383,3 +384,27 @@ async def command_translate(update: Update, context: CallbackContext) -> str:
             message, _ = await translate(text, *params)
 
     return message
+
+
+async def repeat_command(update: Update, context: CallbackContext) -> Union[str, Update]:
+    """
+    Just repeats the command from the replay.
+    The command must be a message starting with "/".
+    Usage (in admin version):
+    + [reply: /lorem en 56]
+    """
+
+    if (
+            not update.message.reply_to_message
+            or not update.message.reply_to_message.text
+    ):
+        return messages["plus"]["no_reply"]
+
+    if not update.message.reply_to_message.text.startswith("/"):
+        return messages["plus"]["no_command"]
+
+    # Moving the reply to the message and clearing cache
+    update.message = update.message.reply_to_message
+    update.message.reply_to_message = None
+    update._effective_message = None
+    return update

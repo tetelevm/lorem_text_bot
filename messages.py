@@ -46,6 +46,10 @@ _Help = TypedDict("_Help", {
     "help": str,
     "unknown": str,
 })
+_Plus = TypedDict("_Plus", {
+    "no_reply": str,
+    "no_command": str,
+})
 
 _Messages = TypedDict("_Messages", {
     "already_run": str,
@@ -57,6 +61,7 @@ _Messages = TypedDict("_Messages", {
     "translate": _Translate,
     "random": _Random,
     "help": _Help,
+    "plus": _Plus,
 })
 
 
@@ -185,6 +190,8 @@ messages: _Messages = {
             "<code>/help /lorem</code>\n"
             "<code>/help /translate</code>\n"
             "\n"
+            "При реплае команды со знаком \"+\" повторяю команду.\n"
+            "\n"
             f"Исходники &lt;<a href=\"{envs['GITHUB_LINK']}\">лежат тут</a>&gt; 🐙. Там же можно"
             " спросить вопросов."
         ),
@@ -303,6 +310,11 @@ messages: _Messages = {
         "help": "🐞❓ Произошла рекурсия, не делайте так!",
         "unknown": "🔎 Ищем-ищем... Не нашли справки для &lt;<code>{}</code>&gt;.",
     },
+
+    "plus": {
+        "no_reply": "🐞 В этом сообщении должен быть реплай команды.",
+        "no_command": "🐞 В реплае не команда!",
+    }
 }
 
 
