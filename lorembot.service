@@ -3,8 +3,8 @@ Description=Bot for generating all sorts of stuff
 After=network.target
 
 [Service]
-ExecStart=/root/envs/bots/bin/python3.8 main.py
-ExecReload=/root/envs/bots/bin/python3.8 main.py
+ExecStart=/opt/lorem_text_bot/env/bin/python3.8 main.py
+ExecReload=/opt/lorem_text_bot/env/bin/python3.8 main.py
 WorkingDirectory=/opt/lorem_text_bot/
 KillMode=process
 Restart=always
