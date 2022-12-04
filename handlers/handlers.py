@@ -26,6 +26,7 @@ __all__ = [
     "command_generate_wat",
     "command_generate_absurd",
     "command_lorem",
+    "command_lorem_tt",
     "command_translate",
     "repeat_command",
 ]
@@ -263,14 +264,16 @@ async def command_lorem(update: Update, context: CallbackContext) -> str:
             *args
     ) -> Union[list, str]:
         """
-        Parses and validates the first three passed arguments.
-        The first can be language or word count (in this case a number),
-        the second word count or character count (depends on the first),
-        the third only character count.
-        The generation language must be known, the word count between
-        5 and 256, the character count between 1 and 3.
-        If all is normal, it will return a list of three generation
-        parameters, if there is an error, it will return a string.
+        Returns a lorem-like pseudo-text that looks like a real language.
+        Has 3 optional positional integer arguments - `language`,
+        `word count` (5-256) and `characters count` (1-3). Usage:
+        /lorem [lang] [words [chars]]
+        /lorem
+        /lorem en
+        /lorem 128
+        /lorem en 128
+        /lorem 128 3
+        /lorem en 128 3
         """
         returned_params = [
             lorem_generator.default_language,
@@ -317,6 +320,18 @@ async def command_lorem(update: Update, context: CallbackContext) -> str:
         message = lorem_generator.clear_text(lorem)
 
     return message
+
+
+async def command_lorem_tt(update: Update, context: CallbackContext) -> str:
+    """
+    It just generates pseudotext in Tatar.
+    Usage (in admin version):
+    /lorem_tt
+    """
+
+    text = lorem_generator("tt")
+    text = lorem_generator.clear_text(text)
+    return text
 
 
 async def command_translate(update: Update, context: CallbackContext) -> str:
