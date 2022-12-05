@@ -117,8 +117,8 @@ async def command_help_admin(update: Update, context: CallbackContext) -> str:
         message = messages["help"]["generate"]
     elif params[0] == "/chinese":
         message = messages["help"]["chinese"]
-    elif params[0] == "/generate_wat":
-        message = messages["help"]["generate_wat"]
+    elif params[0] == "/gen":
+        message = messages["help"]["gen"]
     elif params[0] == "/generate_absurd":
         message = messages["help"]["generate_absurd"]
     elif params[0] == "/lorem":
@@ -194,7 +194,7 @@ async def command_generate_wat(update: Update, context: CallbackContext) -> str:
     Generation is done by the algorithm [wat:uk-en + lin:en-ru] because
     it has better results. Also, all punctuation marks are ignored.
     Usage (in admin version):
-    /generate_wat
+    /gen
     """
 
     word_count = random.randint(10, 18)
