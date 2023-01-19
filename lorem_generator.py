@@ -28,7 +28,18 @@ __all__ = [
 # Functions for text preprocessing, not used in the application
 
 def get_all_chars(path):
-    print(repr("".join(sorted(set(open(path).read())))))
+    with open(path, "r") as file:
+        print(repr("".join(sorted(set(file.read())))))
+
+def replace_symbols(symbols, path, to=None):
+    import re
+    symbols = ("\n !,.?" + symbols).lower()
+    with open(path, "r") as file:
+        text = file.read()
+    text = re.sub(fr"[^{symbols}]", " ", text.lower())
+    to = to or path
+    with open(to, "w") as file:
+        file.write(text)
 
 def clear_text(path, to=None):
     import re
@@ -75,7 +86,7 @@ class LoremGenerator:
     default_word_count = 64
     default_chars_len = 2
 
-    punctuation = r".!?,"
+    punctuation = r"!,.?"
     end_sentence = punctuation.replace(",", "")
     lang_chars = {
         "ru": r"а-яё",
@@ -85,6 +96,7 @@ class LoremGenerator:
         "nl": r"a-z",
         "hy": "ա-և",
         "cs": r"a-záãäåçèéëíóöøúüýčďěňřšťůžίό",
+        "ge": "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ",
     }
 
     text_data: Dict[str, str]
