@@ -1,5 +1,6 @@
 import re
 import random
+from functools import partial
 from typing import List, Union
 
 from telegram import Update
@@ -26,6 +27,7 @@ __all__ = [
     "command_generate_wat",
     "command_generate_absurd",
     "command_lorem",
+    "command_lorem_full",
     "command_lorem_tt",
     "command_translate",
     "repeat_command",
@@ -229,9 +231,11 @@ async def command_generate_absurd(update: Update, context: CallbackContext) -> s
     return text
 
 
-async def command_lorem(update: Update, context: CallbackContext) -> str:
+async def command_lorem(update: Update, context: CallbackContext, *, _clear=True) -> str:
     """
     Returns a lorem-like pseudo-text that looks like a real language.
+    If the _clear argument is used, punctuation marks are removed (the
+    default behavior).
     Has 3 optional positional integer arguments - `language`,
     `word count` (5-256) and `characters count` (1-3). Usage:
     /lorem [lang] [words [chars]]
@@ -302,10 +306,15 @@ async def command_lorem(update: Update, context: CallbackContext) -> str:
         # incorrect parameters
         message = input_params
     else:
-        lorem = lorem_generator.generate_lorem(*input_params)
-        message = lorem_generator.clear_text(lorem)
+        message = lorem_generator.generate_lorem(*input_params)
+        if _clear:
+            message = lorem_generator.clear_text(message)
 
     return message
+
+
+# Same as `command_lorem`, but the punctuation marks are kept
+command_lorem_full = partial(command_lorem, _clear=False)
 
 
 async def command_lorem_tt(update: Update, context: CallbackContext) -> str:
