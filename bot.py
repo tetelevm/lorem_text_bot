@@ -163,7 +163,7 @@ async def admin_bot_init(token):
     """
     commands = [
         Command(command_start_admin, "start", TEXT & ChatType.PRIVATE),
-        Command(command_generate_wat, "gen", TEXT, description="сгенерировать фразу Waston 🇼️️", to_button=True),
+        Command(command_generate_wat, "gen", TEXT, description="сгенерировать фразу Watson 🇼️️", to_button=True),
         Command(command_lorem_tt, "lorem_tt", TEXT, description="сгенерировать псевдотатарское 📃", to_button=True),
         Command(command_chinese, "chinese", TEXT, description="перевод китайских символов 🈲", to_button=True),
         Command(command_lorem, "lorem", TEXT, description="сгенерировать псевдотекст 📃", to_button=True),
@@ -183,7 +183,7 @@ async def test_bot_init(token):
     """
     commands = [
         Command(command_start_admin, "start", TEXT & ChatType.PRIVATE),
-        Command(command_generate_wat, "gen", TEXT, description="сгенерировать фразу Waston 🇼️️", to_button=True),
+        Command(command_generate_wat, "gen", TEXT, description="сгенерировать фразу Watson 🇼️️", to_button=True),
         Command(command_lorem_tt, "lorem_tt", TEXT, description="сгенерировать псевдотатарское 📃", to_button=True),
         Command(command_chinese, "chinese", TEXT, description="перевод китайских символов 🈲", to_button=True),
         Command(command_random, "random", TEXT, description="случайный пост из канала 📓", to_button=True),

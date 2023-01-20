@@ -84,16 +84,12 @@ async def command_help_user(update: Update, context: CallbackContext) -> str:
     input_text = update.message.text
     params = parse_args(input_text)
 
+    allowed_helpers = ["/generate", "/chinese", "/random", "/help"]
+
     if not params:
         message = messages["help"]["user"]
-    elif params[0] == "/generate":
-        message = messages["help"]["generate"]
-    elif params[0] == "/chinese":
-        message = messages["help"]["chinese"]
-    elif params[0] == "/random":
-        message = messages["help"]["random"]
-    elif params[0] == "/help":
-        message = messages["help"]["help"]
+    elif params[0] in allowed_helpers:
+        message = messages["help"][params[0][1:]]
     else:
         message = messages["help"]["unknown"].format(params[0])
 
@@ -111,28 +107,18 @@ async def command_help_admin(update: Update, context: CallbackContext) -> str:
     input_text = update.message.text
     params = parse_args(input_text)
 
+    allowed_helpers = [
+        "/generate", "/chinese", "/gen", "/generate_absurd", "/lorem",
+        "/lorem_full", "/lorem_tt", "/translate"
+    ]
+
     if not params:
         message = messages["help"]["admin"]
-    elif params[0] == "/generate":
-        message = messages["help"]["generate"]
-    elif params[0] == "/chinese":
-        message = messages["help"]["chinese"]
-    elif params[0] == "/gen":
-        message = messages["help"]["gen"]
-    elif params[0] == "/generate_absurd":
-        message = messages["help"]["generate_absurd"]
-    elif params[0] == "/lorem":
-        languages = ", ".join(lorem_generator.languages)
-        message = messages["help"]["lorem"].format(languages=languages)
-    elif params[0] == "/translate":
-        translator_names = ", ".join(text_translator.translator_names)
-        languages = ", ".join(shared_languages)
-        message = messages["help"]["translate"].format(
-            translators=translator_names,
-            languages=languages
-        )
+    elif params[0] in allowed_helpers:
+        message = messages["help"][params[0][1:]]
     elif params[0] == "/help":
         message = messages["help"]["help"]
+
     else:
         message = messages["help"]["unknown"].format(params[0])
 
